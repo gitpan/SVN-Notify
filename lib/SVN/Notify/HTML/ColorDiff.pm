@@ -1,12 +1,12 @@
 package SVN::Notify::HTML::ColorDiff;
 
-# $Id: ColorDiff.pm 740 2004-10-15 06:12:54Z theory $
+# $Id: ColorDiff.pm 749 2004-10-19 03:56:13Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify::HTML ();
 
-$SVN::Notify::HTML::ColorDiff::VERSION = '2.22';
+$SVN::Notify::HTML::ColorDiff::VERSION = '2.30';
 @SVN::Notify::HTML::ColorDiff::ISA = qw(SVN::Notify::HTML);
 
 =head1 Name
@@ -112,6 +112,7 @@ sub output_diff {
         next unless $line;
         if ($line =~ /^(Modified|Added|Deleted): (.*)/) {
             my $class = $types{$1};
+            ++$seen{$2};
             my $file = encode_entities($2);
             (my $id = $file) =~ s/[^\w_]//g;
             # Dump line.
@@ -210,7 +211,7 @@ L<http://www.badgers-in-foil.co.uk/projects/cvsspam/example.html>.
 
 Add links to ToDo stuff to the top of the email, as pulled in from the
 diff. This might be tricky, since the diff is currently output I<after> the
-message body.
+message body. Maybe use absolute positioning CSS?
 
 =back
 
