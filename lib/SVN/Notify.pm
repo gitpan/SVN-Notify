@@ -1,9 +1,9 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 761 2004-10-21 19:51:23Z theory $
+# $Id: Notify.pm 763 2004-10-21 20:35:23Z theory $
 
 use strict;
-$SVN::Notify::VERSION = '2.40';
+$SVN::Notify::VERSION = '2.41';
 
 =head1 Name
 
@@ -933,7 +933,7 @@ sub output_metadata {
       "Revision: $self->{revision}\n",
       "Author:   $self->{user}\n",
       "Date:     $self->{date}\n";
-    printf $out "ViewCVS:  $self->{viewcvs_url}", $self->{revision}
+    printf $out "ViewCVS:  $self->{viewcvs_url}\n", $self->{revision}
       if $self->{viewcvs_url};
     print $out "\n";
     return $self;
