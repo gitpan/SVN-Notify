@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: html.t 733 2004-10-09 21:20:33Z theory $
+# $Id: html.t 740 2004-10-15 06:12:54Z theory $
 
 use strict;
 use Test::More;
@@ -9,7 +9,7 @@ use File::Spec::Functions;
 if ($^O eq 'MSWin32') {
     plan skip_all => "SVN::Notify::HTML not yet supported on Win32";
 } elsif (eval { require HTML::Entities }) {
-    plan tests => 102;
+    plan tests => 115;
 } else {
     plan skip_all => "SVN::Notify::HTML requires HTML::Entities";
 }
@@ -161,6 +161,9 @@ like( $email,
 like( $email,
       qr|<a id="trunkParamsCallbackRequestChanges">Modified: trunk/Params-CallbackRequest/Changes</a>\n|,
       "Check for file name anchor id" );
+like( $email,
+      qr|<a id="trunkParamsCallbackRequestlibParamsCallbackpm">Added: trunk/Params-CallbackRequest/lib/Params/Callback\.pm</a>\n|,
+      "Check for added file name anchor id" );
 
 ##############################################################################
 # Attach diff.
@@ -209,7 +212,7 @@ is( scalar @{[$email =~ m{(--frank--)}g]}, 1,
 # Try html format with a single file changed.
 ##############################################################################
 ok( $notifier = SVN::Notify::HTML->new(%args, revision => '222'),
-    "Construct new subject_cx file notifier" );
+    "Construct new HTML file notifier" );
 isa_ok($notifier, 'SVN::Notify::HTML');
 isa_ok($notifier, 'SVN::Notify');
 ok( $notifier->prepare, "Prepare HTML file" );
@@ -258,6 +261,34 @@ ok( $notifier->execute, "Notify charset" );
 $email = get_output();
 like( $email, qr{Content-Type: text/html; charset=ISO-8859-1\n},
       'Check Content-Type charset' );
+
+##############################################################################
+# Try html format with propsets.
+##############################################################################
+ok( $notifier = SVN::Notify::HTML->new(%args, with_diff => 1, revision => '333'),
+    "Construct new HTML propset notifier" );
+isa_ok($notifier, 'SVN::Notify::HTML');
+isa_ok($notifier, 'SVN::Notify');
+ok( $notifier->prepare, "Prepare HTML propset" );
+ok( $notifier->execute, "Notify HTML propset" );
+
+# Check the output.
+$email = get_output();
+like( $email, qr{Subject: \[333\] Property modification\.\n},
+      "Check subject header for propset HTML" );
+like( $email, qr/From: theory\n/, 'Check HTML propset From');
+like( $email, qr/To: test\@example\.com\n/, 'Check HTML propset To');
+like( $email, qr{Content-Type: text/html; charset=UTF-8\n},
+      'Check HTML propset Content-Type' );
+like( $email, qr{Content-Transfer-Encoding: 8bit\n},
+      'Check HTML propset Content-Transfer-Encoding');
+
+like( $email,
+      qr|<a id="trunkactivitymailbinactivitymail">Modified: trunk/activitymail/bin/activitymail</a>\n|,
+      "Check for file name anchor id" );
+like( $email,
+      qr|<a id="trunkactivitymailtactivitymailt">Property changes on: trunk/activitymail/t/activitymail\.t</a>\n|,
+      "Check for propset file name anchor id" );
 
 ##############################################################################
 # Functions.

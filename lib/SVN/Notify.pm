@@ -1,9 +1,9 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 732 2004-10-09 21:12:42Z theory $
+# $Id: Notify.pm 735 2004-10-09 22:42:23Z theory $
 
 use strict;
-$SVN::Notify::VERSION = '2.21';
+$SVN::Notify::VERSION = '2.22';
 
 =head1 Name
 

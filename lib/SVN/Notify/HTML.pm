@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 733 2004-10-09 21:20:33Z theory $
+# $Id: HTML.pm 740 2004-10-15 06:12:54Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.21';
+$SVN::Notify::HTML::VERSION = '2.22';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 =head1 Name
@@ -201,7 +201,7 @@ sub output_file_lists {
 
         # Identify the action and output each file.
         print $out "<h3>$map->{$type}</h3>\n<ul>\n";
-        if ($self->with_diff && !$self->attach_diff && $type ne '_') {
+        if ($self->with_diff && !$self->attach_diff) {
             for (@{ $files->{$type} }) {
                 my $file = encode_entities($_);
                 # Strip out letters illegal for IDs.
@@ -255,12 +255,16 @@ sub output_diff {
     $self->_dbpnt( "Outputting HTML diff") if $self->verbose > 1;
 
     print $out qq{</div>\n<div id="patch"><pre>\n};
+    my %seen;
     while (<$diff>) {
         s/[\n\r]+$//;
-        if (/^Modified: (.*)/) {
-            my $file = encode_entities($1);
+        if (/^(Modified|Added|Deleted|Property changes on): (.*)/
+            && !$seen{$2}++)
+        {
+            my $action = $1;
+            my $file = encode_entities($2);
             (my $id = $file) =~ s/[^\w_]//g;
-            print $out qq{<a id="$id">Modified: $file</a>\n"};
+            print $out qq{<a id="$id">$action: $file</a>\n"};
         }
         print $out encode_entities($_), "\n";
     }
