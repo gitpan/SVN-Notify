@@ -1,11 +1,20 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 763 2004-10-21 20:35:23Z theory $
+# $Id: Notify.pm 775 2004-10-24 02:56:58Z theory $
 
 use strict;
-$SVN::Notify::VERSION = '2.41';
+$SVN::Notify::VERSION = '2.42';
 
 =head1 Name
+
+=begin comment
+
+Fake-out Module::Build. Delete if it ever changes to support =head1 headers
+other than all uppercase.
+
+=head1 NAME
+
+=end comment
 
 SVN::Notify - Subversion activity notification
 
@@ -49,9 +58,9 @@ everything executes properly.
 =cut
 
 # Map the svnlook changed codes to nice labels.
-my %map = ( U => 'Modified Files',
-            A => 'Added Files',
-            D => 'Removed Files',
+my %map = ( U => 'Modified Paths',
+            A => 'Added Paths',
+            D => 'Removed Paths',
             _ => 'Property Changed');
 
 ##############################################################################
@@ -504,9 +513,9 @@ C<prepare_files()> has been called. The hash keys in that list correspond to
 Subversion status codes, and these are mapped to their appropriate labels by
 the hash reference returned by this method:
 
-  { U => 'Modified Files',
-    A => 'Added Files',
-    D => 'Removed Files',
+  { U => 'Modified Paths',
+    A => 'Added Paths',
+    D => 'Removed Paths',
     _ => 'Property Changed'
   }
 
@@ -1395,8 +1404,7 @@ Subclasses SVN::Notify.
 
 =head1 Bugs
 
-Report all bugs via the CPAN Request Tracker at
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=SVN-Notify>.
+Please send bug reports to <bug-svn-notify@rt.cpan.org>.
 
 =head1 To Do
 
@@ -1411,6 +1419,15 @@ code.
 =back
 
 =head1 Author
+
+=begin comment
+
+Fake-out Module::Build. Delete if it ever changes to support =head1 headers
+other than all uppercase.
+
+=head1 AUTHOR
+
+=end comment
 
 David Wheeler <david@kineticode.com>
 

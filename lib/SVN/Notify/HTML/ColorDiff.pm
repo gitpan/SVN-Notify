@@ -1,12 +1,12 @@
 package SVN::Notify::HTML::ColorDiff;
 
-# $Id: ColorDiff.pm 762 2004-10-21 19:52:28Z theory $
+# $Id: ColorDiff.pm 764 2004-10-21 20:36:43Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify::HTML ();
 
-$SVN::Notify::HTML::ColorDiff::VERSION = '2.41';
+$SVN::Notify::HTML::ColorDiff::VERSION = '2.42';
 @SVN::Notify::HTML::ColorDiff::ISA = qw(SVN::Notify::HTML);
 
 =head1 Name

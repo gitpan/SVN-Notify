@@ -1,5 +1,13 @@
 Revision history for Perl extension SVN::Notify
 
+2.42  2004-11-19T18:47:20
+      - Changed "Files" to "Paths" in hash returned by "file_label_map()"
+        since directories can be listed as well as files.
+      - Fixed SVN::Notify::HTML so that directories listed among the
+        changed paths are not links.
+      - Requiring Module::Build 0.26 to make sure that the installation
+        works properly. Reported by Robert Spier.
+
 2.41  2004-10-21T20:33:25
       - Added missing newline between the commit metadata and the log
         message in SVN::Notify.
