@@ -1,8 +1,37 @@
 use Module::Build;
-use File::Spec::Functions;
 use Config;
 
-my $build = Module::Build->new(
+my $class = Module::Build->subclass(
+    class => 'My::Builder',
+    code => q{
+             sub ACTION_build {
+                 use File::Spec::Functions;
+                 my $self = shift;
+                 $self->SUPER::ACTION_build(@_);
+                 # Copy the test scripts and then set the shebang line and make
+                 # sure that they're executable.
+                 my @scripts;
+                 my $to_dir = $self->localize_file_path("t/scripts");
+                 for my $base (qw(testsvnlook testsendmail)) {
+                     for my $suf ('', '.bat') {
+                         my $script = "$to_dir/$base$suf";
+                         push @scripts, $self->localize_file_path($script);
+                         my $orig = $self->localize_file_path("t/bin/$base$suf");
+                         $self->copy_if_modified(
+                             from    => $orig,
+                             to_dir  => $to_dir,
+                             flatten => 1,
+                         );
+                     }
+                 }
+                 $self->fix_shebang_line(@scripts);
+                 $self->make_executable(@scripts);
+                 $self->add_to_cleanup($to_dir);
+             }
+         },
+);
+
+my $build = $class->new(
     module_name        => 'SVN::Notify',
     license            => 'perl',
     dist_author        => 'David Wheeler <david@kineticode.com>',
@@ -20,12 +49,3 @@ my $build = Module::Build->new(
 );
 $build->create_build_script;
 
-# Set the shebang line in the test scripts and make sure that they're
-# executable.
-for my $script (qw(testsvnlook testsendmail)) {
-    for my $suf ('', '.bat') {
-        my $file = catfile curdir, 't', 'bin', $script . $suf;
-        $build->fix_shebang_line($file);
-        chmod 0755, $file;
-    }
-}

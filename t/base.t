@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: base.t 720 2004-10-07 06:17:22Z theory $
+# $Id: base.t 724 2004-10-07 23:39:27Z theory $
 
 use strict;
 use Test::More;
@@ -16,9 +16,12 @@ BEGIN { use_ok('SVN::Notify') }
 
 my $ext = $^O eq 'MSWin32' ? '.bat' : '';
 
+my $dir = catdir curdir, 't', 'scripts';
+$dir = catdir curdir, 't', 'bin' unless -d $dir;
+
 my %args = (
-    svnlook    => catfile(curdir, 't', 'bin', "testsvnlook$ext"),
-    sendmail   => catfile(curdir, 't', 'bin', "testsendmail$ext"),
+    svnlook    => catfile($dir, "testsvnlook$ext"),
+    sendmail   => catfile($dir, "testsendmail$ext"),
     repos_path => 'tmp',
     revision   => '111',
     to         => 'test@example.com',

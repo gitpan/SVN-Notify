@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 718 2004-10-07 05:34:16Z theory $
+# $Id: HTML.pm 727 2004-10-09 19:55:37Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.10';
+$SVN::Notify::HTML::VERSION = '2.20';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 =head1 Name
@@ -76,19 +76,62 @@ sub content_type { 'text/html' }
   $notifier->start_body($file_handle);
 
 This method starts the body of the notification message. It outputs the
-opening C<< <html> >> and C<< <body> >> tags, as well as a definition list
-containting the metadata of the commit, including the revision number, author
-(user), and date of the revision. If the C<viewcvs_url> attribute has been
-set, then the appropriate URL for the revision will be used to turn the
-revision number into a link.
+opening C<< <html> >>, C<< <head> >>, C<< <style> >>, and C<< <body> >> tags.
 
 =cut
 
 sub start_body {
     my ($self, $out) = @_;
+    print $out qq{<html>\n<head><style type="text/css"><!--\n};
+    $self->output_css($out);
+    print $out qq{--></style>\n</head>\n<body>\n\n<div id="msg">\n};
+    return $self;
+}
+
+##############################################################################
+
+=head3 output_css
+
+  $notifier->output_css($file_handle);
+
+This method starts outputs the CSS for the HTML message. It is called by
+C<start_body()>, and which wraps the output of C<output_css()> in the
+appropriate C<< <style> >> tags.
+
+=cut
+
+sub output_css {
+    my ($self, $out) = @_;
     print $out
-      "<html>\n<body>\n\n<dl>\n",
-      "<dt>Revision</dt> <dd>";
+      qq(body {background:#ffffff;font-family:Verdana,Helvetica,Arial,sans-serif;}\n),
+      qq(h3 {margin:15px 0;padding:0;line-height:0;}\n),
+      qq(#msg {margin: 0 0 2em 0;}\n),
+      qq(#msg dl, #msg ul, #msg pre {padding:1em;border:1px dashed black;),
+        qq(margin: 10px 0 30px 0;}\n),
+      qq(#msg dl {background:#ccccff;}\n),
+      qq(#msg pre {background:#ffffcc;}\n),
+      qq(#msg ul {background:#cc99ff;list-style:none;}\n),
+      qq(#msg dt {font-weight:bold;float:left;width: 6em;}\n),
+      qq(#msg dt:after { content:':';}\n);
+    return $self;
+}
+
+##############################################################################
+
+=head3 output_metadata
+
+  $notifier->output_metadata($file_handle);
+
+This method outputs a definition list containting the metadata of the commit,
+including the revision number, author (user), and date of the revision. If the
+C<viewcvs_url> attribute has been set, then the appropriate URL for the
+revision will be used to turn the revision number into a link.
+
+=cut
+
+sub output_metadata {
+    my ($self, $out) = @_;
+    print $out "<dl>\n<dt>Revision</dt> <dd>";
 
     if ($self->{viewcvs_url}) {
         # Make the revision number a URL.
@@ -127,7 +170,6 @@ sub output_log_message {
     return $self;
 }
 
-
 ##############################################################################
 
 =head3 output_file_lists
@@ -154,8 +196,15 @@ sub output_file_lists {
 
         # Identify the action and output each file.
         print $out "<h3>$map->{$type}</h3>\n<ul>\n";
-        print $out "  <li>" . HTML::Entities::encode_entities($_) . "</li>\n"
-          for @{ $files->{$type} };
+        if ($self->{with_diff} && !$self->{attach_diff} && $type ne '_') {
+            for (@{ $files->{$type} }) {
+                my $file = encode_entities($_);
+                print $out qq{<li><a href="#$file">$file</a></li>\n};
+            }
+        } else {
+            print $out "  <li>" . encode_entities($_) . "</li>\n"
+              for @{ $files->{$type} };
+        }
         print $out "</ul>\n\n";
     }
 }
@@ -175,6 +224,7 @@ complete, and before any call to C<output_attached_diff()>.
 sub end_body {
     my ($self, $out) = @_;
     $self->_dbpnt( "Ending body") if $self->{verbose} > 2;
+    print $out "\n</div>" unless $self->{with_diff} && !$self->{attach_diff};
     print $out "\n</body>\n</html>\n";
     return $self;
 }
@@ -199,12 +249,16 @@ sub output_diff {
     my $diff = $self->_pipe('-|', $self->{svnlook}, 'diff',
                             $self->{repos_path}, '-r', $self->{revision});
 
-    print $out "<pre>\n";
+    print $out qq{</div>\n<div id="patch"><pre>\n};
     while (<$diff>) {
         s/[\n\r]+$//;
+        if (/^Modified: (.*)/) {
+            my $f = encode_entities($1);
+            print $out qq{<a id="$f">Modified: $f</a>\n"};
+        }
         print $out encode_entities($_), "\n";
     }
-    print $out "</pre>\n";
+    print $out "</pre></div>\n";
 
     close $diff or warn "Child process exited: $?\n";
     return $self;
@@ -213,11 +267,26 @@ sub output_diff {
 1;
 __END__
 
-=head2 See Also
+=head1 See Also
 
 =over
 
 =item L<SVN::Notify|SVN::Notify>
+
+=back
+
+=head1 To Do
+
+=over
+
+=item *
+
+Add support for Bugzilla, RT, and Jira links, so that text in the log message that
+looks like it refers to them will link to them.
+
+=item *
+
+Turn email addresses and URLs in the log message into actual links.
 
 =back
 
