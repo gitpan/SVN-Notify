@@ -1,12 +1,12 @@
 package SVN::Notify::HTML::ColorDiff;
 
-# $Id: ColorDiff.pm 727 2004-10-09 19:55:37Z theory $
+# $Id: ColorDiff.pm 732 2004-10-09 21:12:42Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify::HTML ();
 
-$SVN::Notify::HTML::ColorDiff::VERSION = '2.20';
+$SVN::Notify::HTML::ColorDiff::VERSION = '2.21';
 @SVN::Notify::HTML::ColorDiff::ISA = qw(SVN::Notify::HTML);
 
 =head1 Name
@@ -81,21 +81,18 @@ sub output_css {
 
 =head3 output_diff
 
-  $notifier->output_diff($file_handle);
+  $notifier->output_diff($out_file_handle, $diff_file_handle);
 
-Sends the output of C<svnlook diff> to the specified file handle for inclusion
-in the notification message. The diff is output between C<< <pre> >> tags, and
-Each line of the diff file is escaped by C<HTML::Entities::encode_entities>.
+Reads the diff data from C<$diff_file_handle> and prints it to
+C<$out_file_handle> for inclusion in the notification message. The diff is
+output with nice colorized HTML markup. Each line of the diff file is escaped
+by C<HTML::Entities::encode_entities()>.
 
 =cut
 
 sub output_diff {
-    my ($self, $out) = @_;
-    $self->_dbpnt( "Outputting colorized HTML diff") if $self->{verbose} > 1;
-
-    # Get the diff and output it.
-    my $diff = $self->_pipe('-|', $self->{svnlook}, 'diff',
-                            $self->{repos_path}, '-r', $self->{revision});
+    my ($self, $out, $diff) = @_;
+    $self->_dbpnt( "Outputting colorized HTML diff") if $self->verbose > 1;
 
     my $in_div;
     my $in_span = '';
@@ -105,6 +102,7 @@ sub output_diff {
         next unless $line;
         if ($line =~ /^Modified: (.*)/) {
             my $file = encode_entities($1);
+            (my $id = $file) =~ s/[^\w_]//g;
             # Dump line.
             <$diff>;
 
@@ -119,7 +117,7 @@ sub output_diff {
             # Output the headers.
             print $out "</span>" if $in_span;
             print $out "</pre></div>\n" if $in_div;
-            print $out qq{<a id="$file"></a>\n<div class="file"><h3>$file},
+            print $out qq{<a id="$id"></a>\n<div class="file"><h3>$file},
               " ($rev1 => $rev2)</h3>\n";
             print $out qq{<pre class="diff">\n<span class="info">};
             $in_div = 1;
@@ -186,7 +184,7 @@ L<http://www.badgers-in-foil.co.uk/projects/cvsspam/example.html>.
 =item *
 
 Add links to ToDo stuff to the top of the email, as pulled in from the
-diff. This might be tricky, since the diff is currently output I<afte> the
+diff. This might be tricky, since the diff is currently output I<after> the
 message body.
 
 =back

@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: html.t 727 2004-10-09 19:55:37Z theory $
+# $Id: html.t 733 2004-10-09 21:20:33Z theory $
 
 use strict;
 use Test::More;
@@ -9,7 +9,7 @@ use File::Spec::Functions;
 if ($^O eq 'MSWin32') {
     plan skip_all => "SVN::Notify::HTML not yet supported on Win32";
 } elsif (eval { require HTML::Entities }) {
-    plan tests => 100;
+    plan tests => 102;
 } else {
     plan skip_all => "SVN::Notify::HTML requires HTML::Entities";
 }
@@ -52,10 +52,10 @@ like( $email, qr{Content-Type: text/html; charset=UTF-8\n},
 like( $email, qr{Content-Transfer-Encoding: 8bit\n},
       'Check HTML Content-Transfer-Encoding');
 
-# Make sure that the <html>, <head>, <body>, and <dl> headers tags
+# Make sure that the <html>, <head>, <body>, <title>, and <dl> headers tags
 # are included.
-for my $tag (qw(html head body dl)) {
-    like( $email, qr/<$tag>/, "Check for <$tag> tag" );
+for my $tag (qw(html head body title dl)) {
+    like( $email, qr/<$tag/, "Check for <$tag> tag" );
     like( $email, qr/<\/$tag>/, "Check for </$tag> tag" );
 }
 
@@ -156,10 +156,10 @@ like( $email, qr{isa        =\&gt; 'Apache',}, "Check for HTML escaping" );
 
 # Make sure that the file names have links into the diff.
 like( $email,
-      qr|<li><a href="#trunk/Params-CallbackRequest/Changes">trunk/Params-CallbackRequest/Changes</a></li>\n|,
+      qr|<li><a href="#trunkParamsCallbackRequestChanges">trunk/Params-CallbackRequest/Changes</a></li>\n|,
       "Check for file name link." );
 like( $email,
-      qr|<a id="trunk/Params-CallbackRequest/Changes">Modified: trunk/Params-CallbackRequest/Changes</a>\n|,
+      qr|<a id="trunkParamsCallbackRequestChanges">Modified: trunk/Params-CallbackRequest/Changes</a>\n|,
       "Check for file name anchor id" );
 
 ##############################################################################
