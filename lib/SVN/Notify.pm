@@ -1,11 +1,9 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 870 2004-11-24 18:50:52Z theory $
+# $Id: Notify.pm 1395 2005-03-18 01:08:42Z theory $
 
 use strict;
-$SVN::Notify::VERSION = '2.43';
-
-=head1 Name
+$SVN::Notify::VERSION = '2.44';
 
 =begin comment
 
@@ -14,7 +12,11 @@ other than all uppercase.
 
 =head1 NAME
 
+SVN::Notify - Subversion activity notification
+
 =end comment
+
+=head1 Name
 
 SVN::Notify - Subversion activity notification
 
