@@ -1,19 +1,16 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 749 2004-10-19 03:56:13Z theory $
+# $Id: HTML.pm 761 2004-10-21 19:51:23Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.30';
+$SVN::Notify::HTML::VERSION = '2.40';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
     linkize      => 'linkize',
-    rt_url       => "rt-url=s",
-    bugzilla_url => "bugzilla-url=s",
-    jira_url     => "jira-url=s",
 );
 
 =head1 Name
@@ -83,46 +80,9 @@ A boolean attribute to specify whether or not to "linkize" the SVN log
 message--that is, to turn any URLs or email addresses in the log message into
 links.
 
-=item rt_url
-
-  svnnotify --rt-url 'http://rt.cpan.org/NoAuth/Bugs.html?id=%s'
-
-The URL of a Request Tracker (RT) server. If passed in, any strings in the log
-message of the form "Ticket # 12" or "ticket 6" or even "Ticket#1066" will be
-turned into links to the RT server. The URL must have the "%s" format where
-the RT ticket ID should be put into the URL.
-
-=item bugzilla_url
-
-  svnnotify --bugzilla-url 'http://bugzilla.mozilla.org/show_bug.cgi?id=%s'
-
-The URL of a Bugzilla server. If passed in, any strings in the log message of
-the form "Bug # 12" or "bug 6" or even "Bug#1066" will be turned into links to
-the Bugzilla server. The URL must have the "%s" format where the Bugzilla Bug
-ID should be put into the URL.
-
-=item jira_url
-
-  svnnotify --jira-url 'http://jira.atlassian.com/secure/ViewIssue.jspa?key=%s'
-
-The URL of a Jira server. If passed in, any strings in the log message that
-appear to be Jira keys (such as "JIRA-1234") will be turned into links to the
-Jira server. The URL must have the "%s" format where the Jira key should be
-put into the URL.
-
 =back
 
 =cut
-
-sub new {
-    my $self = shift->SUPER::new(@_);
-    # Escape URLs.
-    for (qw(viewcvs bugzilla jira rt)) {
-        $self->{"$_\_url"} = encode_entities($self->{"$_\_url"})
-          if $self->{"$_\_url"};
-    }
-    return $self;
-}
 
 ##############################################################################
 
@@ -215,6 +175,7 @@ sub output_metadata {
 
     my $rev = $self->revision;
     if (my $url = $self->viewcvs_url) {
+        $url = encode_entities($url);
         # Make the revision number a URL.
         printf $out qq{<a href="$url">$rev</a>}, $rev;
     } else {
@@ -266,22 +227,26 @@ sub output_log_message {
 
     # Make ViewCVS links.
     if (my $url = $self->viewcvs_url) {
-        $msg =~ s|(revision\s*#?\s*(\d+))|sprintf qq{<a href="$url">$1</a>}, $2|ige;
+        $url = encode_entities($url);
+        $msg =~ s|\b(rev(?:ision)?\s*#?\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ige;
     }
 
     # Make Bugzilla links.
     if (my $url = $self->bugzilla_url) {
-        $msg =~ s|(bug\s*#?\s*(\d+))|sprintf qq{<a href="$url">$1</a>}, $2|ige;
+        $url = encode_entities($url);
+        $msg =~ s|\b(bug\s*#?\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ige;
     }
 
     # Make RT links.
     if (my $url = $self->rt_url) {
-        $msg =~ s|(ticket\s*#?\s*(\d+))|sprintf qq{<a href="$url">$1</a>}, $2|ige;
+        $url = encode_entities($url);
+        $msg =~ s|\b((?:rt-)?ticket:?\s*#?\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ige;
     }
 
     # Make JIRA links.
     if (my $url = $self->jira_url) {
-        $msg =~ s|(jira-\d+)|sprintf qq{<a href="$url">$1</a>}, $1|ige;
+        $url = encode_entities($url);
+        $msg =~ s|\b([A-Z]+-\d+)\b|sprintf qq{<a href="$url">$1</a>}, $1|ge;
     }
 
     # Print it out and return.
