@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: svnnotify 870 2004-11-24 18:50:52Z theory $
+# $Id: svnnotify 1636 2005-05-04 20:40:53Z theory $
 
 use strict;
 use SVN::Notify;
@@ -89,6 +89,7 @@ Fake-out Pod::Usage
   -T --rt-url URL              Include links to specified Request Tracker URL.
   -B --bugzilla-url URL        Include links to specified Bugzilla URL.
   -J --jira-url URL            Include links to specified JIRA URL.
+  -G --gnats-url URL           Include links to specified Gnats URL.
   -V --verbose                 Incremental verbose mode.
   -h --help                    Print this usage statement and exit.
   -m --man                     Print the complete documentation and exit.

@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 1396 2005-03-18 01:10:01Z theory $
+# $Id: HTML.pm 1636 2005-05-04 20:40:53Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.44';
+$SVN::Notify::HTML::VERSION = '2.45';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -247,6 +247,12 @@ sub output_log_message {
     if (my $url = $self->jira_url) {
         $url = encode_entities($url);
         $msg =~ s|\b([A-Z]+-\d+)\b|sprintf qq{<a href="$url">$1</a>}, $1|ge;
+    }
+
+    # Make GNATS links.
+    if (my $url = $self->gnats_url) {
+        $url = encode_entities($url);
+	$msg =~ s|\b(PR\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ge;
     }
 
     # Print it out and return.

@@ -1,5 +1,9 @@
 Revision history for Perl extension SVN::Notify
 
+2.45  2005-05-04T20:38:18
+      - Added support for links to the GNATS bug tracking system.
+        Patch from Nathan Walp.
+
 2.44  2005-03-18T06:10:01
       - Fixed Name in POD so that SVN::Notify's POD gets indexed by
         search.cpan.org. Reported by Ricardo Signes.

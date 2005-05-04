@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 870 2004-11-24 18:50:52Z theory $
+# $Id: options.t 1636 2005-05-04 20:40:53Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -33,6 +33,7 @@ my %params = (
     viewcvs_url    => undef,
     rt_url         => undef,
     bugzilla_url   => undef,
+    gnats_url      => undef,
     jira_url       => undef,
     verbose        => undef,
     help           => undef,
