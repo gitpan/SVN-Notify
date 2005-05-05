@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 1636 2005-05-04 20:40:53Z theory $
+# $Id: HTML.pm 1650 2005-05-05 04:29:59Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.45';
+$SVN::Notify::HTML::VERSION = '2.46';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -348,7 +348,7 @@ sub output_diff {
     my %seen;
     while (<$diff>) {
         s/[\n\r]+$//;
-        if (/^(Modified|Added|Deleted|Property changes on): (.*)/
+        if (/^(Modified|Added|Deleted|Copied|Property changes on): (.*)/
             && !$seen{$2}++)
         {
             my $action = $1;

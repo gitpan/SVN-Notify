@@ -1,12 +1,12 @@
 package SVN::Notify::HTML::ColorDiff;
 
-# $Id: ColorDiff.pm 1400 2005-03-18 06:17:34Z theory $
+# $Id: ColorDiff.pm 1650 2005-05-05 04:29:59Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify::HTML ();
 
-$SVN::Notify::HTML::ColorDiff::VERSION = '2.45';
+$SVN::Notify::HTML::ColorDiff::VERSION = '2.46';
 @SVN::Notify::HTML::ColorDiff::ISA = qw(SVN::Notify::HTML);
 
 =head1 Name
@@ -73,7 +73,8 @@ sub output_css {
       qq(#patch .propset .diff, #patch .binary .diff  {padding: 10px 0;}\n),
       qq(#patch span {display:block;padding:0 10px;}\n),
       qq(#patch .modfile, #patch .addfile, #patch .delfile, #patch .propset,),
-        qq( #patch .binary {border:1px solid black;margin:10px 0;}\n),
+        qq( #patch .binary, #patch .copfile {border:1px solid black;),
+	qq(margin:10px 0;}\n),
       qq(#patch .add {background:#ddffdd;}\n),
       qq(#patch .rem {background:#ffdddd;}\n),
       qq(#patch .lines, .info {color:#888888;background:#ffffff;}\n);
@@ -97,6 +98,7 @@ my %types = (
     Modified => 'modfile',
     Added    => 'addfile',
     Deleted  => 'delfile',
+    Copied   => 'copfile',
 );
 
 sub output_diff {
@@ -110,7 +112,7 @@ sub output_diff {
     while (my $line = <$diff>) {
         $line =~ s/[\n\r]+$//;
         next unless $line;
-        if ($line =~ /^(Modified|Added|Deleted): (.*)/) {
+        if ($line =~ /^(Modified|Added|Deleted|Copied): (.*)/) {
             my $class = $types{my $action = $1};
             ++$seen{$2};
             my $file = encode_entities($2);
