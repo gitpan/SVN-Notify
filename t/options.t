@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 1636 2005-05-04 20:40:53Z theory $
+# $Id: options.t 2022 2005-08-26 16:19:12Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -31,6 +31,7 @@ my %params = (
     max_sub_length => undef,
     handler        => undef,
     viewcvs_url    => undef,
+    svnweb_url     => undef,
     rt_url         => undef,
     bugzilla_url   => undef,
     gnats_url      => undef,
@@ -47,18 +48,19 @@ while (my ($k, $v) = each %testopts) {
     $params{$k} = $v;
 }
 
-# Make sure that this is an array.
-$params{strip_cx_regex} = ['^trunk'];
 
 # Make sure that the default options work.
 local @ARGV = %testopts;
 ok my $opts = SVN::Notify->get_options, "Get SVN::Notify options";
+
+# Make sure that this is an array.
+$params{strip_cx_regex} = ['^trunk'] if $Getopt::Long::VERSION >= 2.34;
+
 is_deeply($opts, \%params, "Check results");
 
 $params{bugzilla_url} = 'url';
 $params{handler} = 'HTML';
 $params{linkize} = undef;
-
 
 # Use the --handler option to load the HTML subclass and make sure that
 # its options are properly parsed out of @ARGV.

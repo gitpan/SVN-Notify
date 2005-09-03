@@ -1,12 +1,12 @@
 package SVN::Notify::HTML::ColorDiff;
 
-# $Id: ColorDiff.pm 1650 2005-05-05 04:29:59Z theory $
+# $Id: ColorDiff.pm 2023 2005-08-26 16:55:13Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify::HTML ();
 
-$SVN::Notify::HTML::ColorDiff::VERSION = '2.46';
+$SVN::Notify::HTML::ColorDiff::VERSION = '2.47';
 @SVN::Notify::HTML::ColorDiff::ISA = qw(SVN::Notify::HTML);
 
 =head1 Name
@@ -63,21 +63,21 @@ sub output_css {
     my ($self, $out) = @_;
     $self->SUPER::output_css($out);
     print $out
-      qq(#patch h4 {padding: 0 10px;line-height:1.5em;),
-        qq(margin:0;background:#ccffff;border-bottom:1px solid black;),
-        qq(margin:0 0 10px 0;}\n),
+      qq(#patch h4 { font-family: verdana,arial,helvetica,sans-serif; ),
+          qq(font-size: 10pt; padding: 8px; background: #369; color: #fff; ),
+          qq(margin: 0; }\n),
       qq(#patch .propset h4, #patch .binary h4 {margin: 0;}\n),
-      qq(#patch pre {padding:0;line-height:1.2em;),
-        qq(margin:0;}\n),
-      qq(#patch .diff {background:#eeeeee;padding: 0 0 10px 0;}\n),
+      qq(#patch pre {padding:0;line-height:1.2em;margin:0;}\n),
+      qq(#patch .diff {background:#eeeeee;padding: 0 0 10px 0; overflow: auto;}\n),
       qq(#patch .propset .diff, #patch .binary .diff  {padding: 10px 0;}\n),
       qq(#patch span {display:block;padding:0 10px;}\n),
-      qq(#patch .modfile, #patch .addfile, #patch .delfile, #patch .propset,),
-        qq( #patch .binary, #patch .copfile {border:1px solid black;),
-	qq(margin:10px 0;}\n),
+      qq(#patch .modfile, #patch .addfile, #patch .delfile, #patch .propset, ),
+          qq(#patch .binary, #patch .copfile {border:1px solid #ccc; ),
+          qq(margin:10px 0;}\n),
       qq(#patch .add {background:#ddffdd;}\n),
       qq(#patch .rem {background:#ffdddd;}\n),
-      qq(#patch .lines, .info {color:#888888;background:#ffffff;}\n);
+      qq(#patch .lines, .info {color:#888888;background:#ffffff;}\n),
+      qq(.diff { width: 100%; }\n);
     return $self;
 }
 

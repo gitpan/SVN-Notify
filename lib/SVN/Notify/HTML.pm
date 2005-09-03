@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 1650 2005-05-05 04:29:59Z theory $
+# $Id: HTML.pm 2023 2005-08-26 16:55:13Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.46';
+$SVN::Notify::HTML::VERSION = '2.47';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -143,16 +143,22 @@ appropriate C<< <style> >> tags.
 sub output_css {
     my ($self, $out) = @_;
     print $out
-      qq(body {background:#ffffff;font-family:Verdana,Helvetica,Arial,sans-serif;}\n),
-      qq(h3 {margin:15px 0;padding:0;line-height:0;}\n),
-      qq(#msg {margin: 0 0 2em 0;}\n),
-      qq(#msg dl, #msg ul, #msg pre {padding:1em;border:1px dashed black;),
-        qq(margin: 10px 0 30px 0;}\n),
-      qq(#msg dl {background:#ccccff;}\n),
-      qq(#msg pre {background:#ffffcc;}\n),
-      qq(#msg ul {background:#cc99ff;list-style:none;}\n),
-      qq(#msg dt {font-weight:bold;float:left;width: 6em;}\n),
-      qq(#msg dt:after { content:':';}\n);
+      qq(#msg dl { border: 1px #006 solid; background: #369; ),
+        qq(padding: 6px; color: #fff; }\n),
+      qq(#msg dt { float: left; width: 6em; font-weight: bold; }\n),
+      qq(#msg dt:after { content:':';}\n),
+      qq(#msg dl, #msg dt, #msg ul, #msg li { font-family: ),
+          qq(verdana,arial,helvetica,sans-serif; font-size: 10pt;  }\n),
+      qq(#msg dl a { font-weight: bold}\n),
+      qq(#msg dl a:link    { color:#fc3; }\n),
+      qq(#msg dl a:active  { color:#ff0; }\n),
+      qq(#msg dl a:visited { color:#cc6; }\n),
+      qq(h3 { font-family: verdana,arial,helvetica,sans-serif; ),
+          qq(font-size: 10pt; font-weight: bold; }\n),
+      qq(#msg pre { overflow: auto; background: #ffc; ),
+          qq(border: 1px #fc0 solid; padding: 6px; }\n),
+      qq(#msg ul, pre { overflow: auto; }\n),
+      qq(#patch { width: 100%; }\n);
     return $self;
 }
 
@@ -164,8 +170,8 @@ sub output_css {
 
 This method outputs a definition list containting the metadata of the commit,
 including the revision number, author (user), and date of the revision. If the
-C<viewcvs_url> attribute has been set, then the appropriate URL for the
-revision will be used to turn the revision number into a link.
+C<svnweb_url> or C<viewcvs_url> attribute has been set, then the appropriate
+URL for the revision will be used to turn the revision number into a link.
 
 =cut
 
@@ -174,7 +180,7 @@ sub output_metadata {
     print $out "<dl>\n<dt>Revision</dt> <dd>";
 
     my $rev = $self->revision;
-    if (my $url = $self->viewcvs_url) {
+    if (my $url = $self->svnweb_url || $self->viewcvs_url) {
         $url = encode_entities($url);
         # Make the revision number a URL.
         printf $out qq{<a href="$url">$rev</a>}, $rev;
@@ -225,8 +231,8 @@ sub output_log_message {
 
     }
 
-    # Make ViewCVS links.
-    if (my $url = $self->viewcvs_url) {
+    # Make SVNWeb/ViewCVS links.
+    if (my $url = $self->svnweb_url || $self->viewcvs_url) {
         $url = encode_entities($url);
         $msg =~ s|\b(rev(?:ision)?\s*#?\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ige;
     }
@@ -354,9 +360,11 @@ sub output_diff {
             my $action = $1;
             my $file = encode_entities($2);
             (my $id = $file) =~ s/[^\w_]//g;
-            print $out qq{<a id="$id">$action: $file</a>\n"};
+            print $out qq{<a id="$id">$action: $file</a>\n};
         }
-        print $out encode_entities($_), "\n";
+        else {
+            print $out encode_entities($_), "\n";
+        }
     }
     print $out "</pre></div>\n";
 
