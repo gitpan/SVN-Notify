@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: svnnotify 1636 2005-05-04 20:40:53Z theory $
+# $Id: svnnotify 2047 2005-09-04 22:23:27Z theory $
 
 use strict;
 use SVN::Notify;
@@ -109,7 +109,7 @@ David Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2005 Kineticode, Inc. All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.

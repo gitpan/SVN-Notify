@@ -1,9 +1,9 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 2022 2005-08-26 16:19:12Z theory $
+# $Id: Notify.pm 2047 2005-09-04 22:23:27Z theory $
 
 use strict;
-$SVN::Notify::VERSION = '2.47';
+$SVN::Notify::VERSION = '2.48';
 
 =begin comment
 
@@ -1529,7 +1529,7 @@ David Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2005 Kineticode, Inc. All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.
