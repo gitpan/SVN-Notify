@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 2056 2005-09-06 19:23:01Z theory $
+# $Id: HTML.pm 2198 2005-11-10 23:15:18Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.49';
+$SVN::Notify::HTML::VERSION = '2.50';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -79,6 +79,16 @@ additional parameters:
 A boolean attribute to specify whether or not to "linkize" the SVN log
 message--that is, to turn any URLs or email addresses in the log message into
 links.
+
+=item ticket_regex
+
+  svnnotify --ticket-regex '\[?\s*(Ticket\s*#\s*(\d+))\s*\]?'
+
+This attribute is inherited from L<SVN::Notify|SVN::Notify>, but its semantics
+are slightly different: it should return I<two> matches instead of one: the
+text to linkify and the ticket ID itself. The example shown matches
+("[Ticket#1234]", "1234") or ("[ Ticket # 1234 ]", "1234"). Make your regex as
+specific as possible, preferably wrapped in "\b" tags and the like.
 
 =back
 
@@ -258,7 +268,22 @@ sub output_log_message {
     # Make GNATS links.
     if (my $url = $self->gnats_url) {
         $url = encode_entities($url);
-	$msg =~ s|\b(PR\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ge;
+        $msg =~ s|\b(PR\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ge;
+    }
+
+    # Make custom ticketing system links.
+    if (my $url = $self->ticket_url) {
+        my $regex = $self->ticket_regex
+            or die q{Missing "ticket_regex" parameter to accompany }
+            . q{"ticket_url" parameter};
+        $url = encode_entities($url);
+        $msg =~ s|$regex|sprintf qq{<a href="$url">$1</a>}, $2|ige;
+    }
+
+    else {
+        die q{Missing "ticket_url" parameter to accompany }
+            . q{"ticket_regex" parameter}
+            if $self->ticket_regex;
     }
 
     # Print it out and return.

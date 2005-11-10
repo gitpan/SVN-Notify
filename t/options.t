@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 2022 2005-08-26 16:19:12Z theory $
+# $Id: options.t 2198 2005-11-10 23:15:18Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -36,6 +36,8 @@ my %params = (
     bugzilla_url   => undef,
     gnats_url      => undef,
     jira_url       => undef,
+    ticket_url     => undef,
+    ticket_regex   => undef,
     verbose        => undef,
     help           => undef,
     man            => undef,
