@@ -1,9 +1,9 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 2198 2005-11-10 23:15:18Z theory $
+# $Id: Notify.pm 2201 2005-11-10 23:36:33Z theory $
 
 use strict;
-$SVN::Notify::VERSION = '2.50';
+$SVN::Notify::VERSION = '2.51';
 
 =begin comment
 
