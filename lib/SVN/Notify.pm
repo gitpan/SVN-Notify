@@ -1,9 +1,11 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 2656 2006-02-19 18:48:25Z theory $
+# $Id: Notify.pm 2683 2006-02-24 18:03:38Z theory $
 
 use strict;
-$SVN::Notify::VERSION = '2.52';
+use constant WIN32  => $^O eq 'MSWin32';
+use constant PERL58 => $] > 5.007;
+$SVN::Notify::VERSION = '2.53';
 
 =begin comment
 
@@ -286,6 +288,20 @@ Omits the first line of the log message from the subject. This is most useful
 when used in combination with the C<subject_cx> parameter, so that just the
 commit context is displayed in the subject and no part of the log message.
 
+=item header
+
+  svnnotify --header 'SVN::Notify is brought to you by Kineticode.
+
+Adds a specified text to each message as a header at the beginning of the
+body of the message.
+
+=item footer
+
+  svnnotify --footer 'Copyright (R) by Kineticode, Inc.'
+
+Adds a specified text to each message as a footer at the end of the body of
+the message.
+
 =item max_sub_length
 
   svnnotify --max-sub-length 72
@@ -435,8 +451,8 @@ sub new {
       unless $params{to} || $params{to_regex_map};
 
     # Set up default values.
-    $params{svnlook}   ||= $ENV{SVNLOOK}  || _find_exe('svnlook');
-    $params{sendmail}  ||= $ENV{SENDMAIL} || _find_exe('sendmail');
+    $params{svnlook}   ||= $ENV{SVNLOOK}  || $class->find_exe('svnlook');
+    $params{sendmail}  ||= $ENV{SENDMAIL} || $class->find_exe('sendmail');
     $params{with_diff} ||= $params{attach_diff};
     $params{verbose}   ||= 0;
     $params{charset}   ||= 'UTF-8';
@@ -566,6 +582,8 @@ sub get_options {
         "help|h"              => \$opts->{help},
         "man|m"               => \$opts->{man},
         "version|v"           => \$opts->{version},
+        "header=s"            => \$opts->{header},
+        "footer=s"            => \$opts->{footer},
     ) or return;
 
     # Load a subclass if one has been specified.
@@ -602,6 +620,31 @@ the hash reference returned by this method:
 =cut
 
 sub file_label_map { \%map }
+
+##############################################################################
+
+=head3 find_exe
+
+  my $exe = SVN::Notify->find_exe($exe_name);
+
+This method searches through the system path, as well as the extra directories
+F</usr/local/bin> and F</usr/sbin> (because they're common paths for
+C<svnlook> and C<sendmail> for an executable file with the name C<$exe_name>.
+The first one it finds is returned with its full path. If none is found,
+C<find_exe()> returns undef.
+
+=cut
+
+sub find_exe {
+    my ($class, $exe) = @_;
+    $exe .= '.exe' if WIN32;
+    require File::Spec;
+    for my $path ( File::Spec->path, @{ ['/usr/local/bin', '/usr/sbin'] } ) {
+        $path = File::Spec->catfile($path, $exe);
+        return $path if -f $path && -x _;
+    }
+    return;
+}
 
 ##############################################################################
 
@@ -887,7 +930,7 @@ It is thus essentially a shortcut for:
     $notifier->output_headers($out);
     $notifier->output_content_type($out);
     $notifier->start_body($out);
-    $self->output_metadata($out);
+    $notifier->output_metadata($out);
     $notifier->output_log_message($out);
     $notifier->output_file_lists($out);
     if ($notifier->with_diff) {
@@ -908,7 +951,6 @@ It is thus essentially a shortcut for:
 sub output {
     my ($self, $out) = @_;
     $self->_dbpnt( "Outputting notification message") if $self->{verbose} > 1;
-
     $self->output_headers($out);
     $self->output_content_type($out);
     $self->start_body($out);
@@ -917,8 +959,11 @@ sub output {
     $self->output_file_lists($out);
     if ($self->{with_diff}) {
         # Get a handle on the diff output.
-        my $diff = $self->_pipe('-|', $self->{svnlook}, 'diff',
-                                $self->{repos_path}, '-r', $self->{revision});
+        my $diff = $self->_pipe(
+            '-|'   => $self->{svnlook},
+            'diff' => $self->{repos_path},
+            '-r'   => $self->{revision}
+        );
         if ($self->{attach_diff}) {
             $self->end_body($out);
             $self->output_attached_diff($out, $diff);
@@ -1006,12 +1051,17 @@ sub output_content_type {
 
   $notifier->start_body($file_handle);
 
-This method starts the body of the notification message. It doesn't actually
-do anything in this class, but see subclasses for other behaviors.
+This method starts the body of the notification message, which means that it
+outputs the contents of the C<header> attribute, if there are any. Otherwise
+it outputs nothing, but see subclasses for other behaviors.
 
 =cut
 
-sub start_body { shift }
+sub start_body {
+    my ($self, $out) = @_;
+    print $out "$self->{header}\n\n" if $self->{header};
+    return $self;
+}
 
 ##############################################################################
 
@@ -1166,15 +1216,17 @@ sub output_file_lists {
 
   $notifier->end_body($file_handle);
 
-Closes out the body of the email. Designed to be called when the body of the
-message is complete, and before any call to C<output_attached_diff()>.
+Closes out the body of the email by outtputing the contents of the C<footer>
+attribute, if any, and then a couple of newlines. Designed to be called when
+the body of the message is complete, and before any call to
+C<output_attached_diff()>.
 
 =cut
 
 sub end_body {
     my ($self, $out) = @_;
     $self->_dbpnt( "Ending body") if $self->{verbose} > 2;
-    print $out "\n\n";
+    print $out $self->{footer} ? "\n$self->{footer}\n\n" : "\n\n";
     return $self;
 }
 
@@ -1280,6 +1332,8 @@ __PACKAGE__->_accessors(qw(
     gnats_url
     ticket_url
     ticket_regex
+    header
+    footer
     verbose
     boundary
     user
@@ -1504,6 +1558,20 @@ Gets or sets the value of the C<files> attribute, which is set to a hash
 reference of change type mapped to arrays of strings by the call to
 C<prepare_files()>.
 
+=head3 header
+
+  my $header = $notifier->header;
+  $notifier = $notifier->header($header);
+
+Gets or set the value of the C<header> attribute.
+
+=head3 footer
+
+  my $footer = $notifier->footer;
+  $notifier = $notifier->footer($footer);
+
+Gets or set the value of the C<footer> attribute.
+
 =cut
 
 ##############################################################################
@@ -1525,7 +1593,8 @@ sub _pipe {
     die "Cannot fork: $!\n" unless defined $pid;
 
     if ($pid) {
-        # Parent process. Return the file handle.
+        # Parent process. Set the encoing layer and return the file handle.
+        binmode(PIPE, ':encoding(' . $self->charset . ')') if PERL58;
         return *PIPE;
     } else {
         # Child process. Execute the commands.
@@ -1554,20 +1623,6 @@ sub _read_pipe {
 ##############################################################################
 
 sub _dbpnt { print __PACKAGE__, ": $_[1]\n" }
-
-##############################################################################
-# This function is used to search the path for an executable.
-##############################################################################
-
-sub _find_exe {
-    my $exe = shift;
-    require File::Spec;
-    for my $path (File::Spec->path, '/usr/local/bin', '/usr/sbin') {
-        $path = File::Spec->catfile($path, $exe);
-        return $path if -x $path && -f _;
-    }
-    return;
-}
 
 1;
 __END__

@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 2198 2005-11-10 23:15:18Z theory $
+# $Id: options.t 2676 2006-02-23 19:39:06Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -42,6 +42,8 @@ my %params = (
     help           => undef,
     man            => undef,
     version        => undef,
+    header         => undef,
+    footer         => undef,
 );
 
 while (my ($k, $v) = each %testopts) {

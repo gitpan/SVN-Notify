@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: svnnotify 2198 2005-11-10 23:15:18Z theory $
+# $Id: svnnotify 2676 2006-02-23 19:39:06Z theory $
 
 use strict;
 use SVN::Notify;
@@ -92,6 +92,8 @@ Fake-out Pod::Usage
   -G --gnats-url URL           Include links to specified Gnats URL.
      --ticket-regex REGEX      Regex matching a custom ticket identifiers.
      --ticket-url URL          URL for linking to custom ticket identifers.
+     --header HEADER           Text header to display before body.
+     --footer FOOTER           Text footer to display at end of body.
   -V --verbose                 Incremental verbose mode.
   -h --help                    Print this usage statement and exit.
   -m --man                     Print the complete documentation and exit.
