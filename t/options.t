@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 2676 2006-02-23 19:39:06Z theory $
+# $Id: options.t 2723 2006-03-06 00:30:38Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -17,33 +17,34 @@ my %testopts = (
 );
 
 my %params = (
-    to_regex_map   => undef,
-    from           => undef,
-    user_domain    => undef,
-    charset        => undef,
-    language       => undef,
-    with_diff      => undef,
-    attach_diff    => undef,
-    reply_to       => undef,
-    subject_prefix => undef,
-    subject_cx     => undef,
-    no_first_line  => undef,
-    max_sub_length => undef,
-    handler        => undef,
-    viewcvs_url    => undef,
-    svnweb_url     => undef,
-    rt_url         => undef,
-    bugzilla_url   => undef,
-    gnats_url      => undef,
-    jira_url       => undef,
-    ticket_url     => undef,
-    ticket_regex   => undef,
-    verbose        => undef,
-    help           => undef,
-    man            => undef,
-    version        => undef,
-    header         => undef,
-    footer         => undef,
+    to_regex_map    => undef,
+    from            => undef,
+    user_domain     => undef,
+    charset         => undef,
+    language        => undef,
+    with_diff       => undef,
+    attach_diff     => undef,
+    reply_to        => undef,
+    subject_prefix  => undef,
+    subject_cx      => undef,
+    no_first_line   => undef,
+    max_sub_length  => undef,
+    max_diff_length => undef,
+    handler         => undef,
+    viewcvs_url     => undef,
+    svnweb_url      => undef,
+    rt_url          => undef,
+    bugzilla_url    => undef,
+    gnats_url       => undef,
+    jira_url        => undef,
+    ticket_url      => undef,
+    ticket_regex    => undef,
+    verbose         => undef,
+    help            => undef,
+    man             => undef,
+    version         => undef,
+    header          => undef,
+    footer          => undef,
 );
 
 while (my ($k, $v) = each %testopts) {
