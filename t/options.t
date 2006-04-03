@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 2723 2006-03-06 00:30:38Z theory $
+# $Id: options.t 2770 2006-04-03 22:31:33Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -21,6 +21,7 @@ my %params = (
     from            => undef,
     user_domain     => undef,
     charset         => undef,
+    io_layer        => undef,
     language        => undef,
     with_diff       => undef,
     attach_diff     => undef,
@@ -66,6 +67,7 @@ is_deeply($opts, \%params, "Check results");
 $params{bugzilla_url} = 'url';
 $params{handler} = 'HTML';
 $params{linkize} = undef;
+$params{css_url} = undef;
 
 # Use the --handler option to load the HTML subclass and make sure that
 # its options are properly parsed out of @ARGV.

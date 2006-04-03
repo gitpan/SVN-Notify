@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: base.t 2723 2006-03-06 00:30:38Z theory $
+# $Id: base.t 2771 2006-04-03 23:10:02Z theory $
 
 use strict;
 use Test::More;
@@ -9,7 +9,7 @@ use File::Spec::Functions;
 if ($^O eq 'MSWin32') {
     plan skip_all => "SVN::Notify not yet supported on Win32";
 } else {
-    plan tests => 177;
+    plan tests => 182;
 }
 
 BEGIN { use_ok('SVN::Notify') }
@@ -50,6 +50,7 @@ is($notifier->user_domain, $args{user_domain},
 is($notifier->svnlook, $args{svnlook}, "Check svnlook accessor" );
 is($notifier->sendmail, $args{sendmail}, "Check sendmail accessor" );
 is($notifier->charset, 'UTF-8', "Check charset accessor" );
+is($notifier->io_layer, 'encoding(UTF-8)', 'Check IO layer');
 is($notifier->language, undef, "Check language accessor" );
 is($notifier->with_diff, $args{with_diff}, "Check with_diff accessor" );
 is($notifier->attach_diff, $args{attach_diff}, "Check attach_diff accessor" );
@@ -122,8 +123,15 @@ unlike( $email, qr{Modified: trunk/Params-CallbackRequest/Changes},
 ##############################################################################
 # Include diff and language.
 ##############################################################################
-ok( $notifier = SVN::Notify->new(%args, with_diff => 1, language => 'en'),
-    "Construct new diff notifier" );
+ok( $notifier = SVN::Notify->new(
+    %args,
+    with_diff => 1,
+    language  => 'en',
+    io_layer  => 'raw',
+), 'Construct new diff notifier' );
+ok $notifier->with_diff, 'with_diff() should return true';
+is $notifier->language, 'en', 'language should be "en"';
+is $notifier->io_layer, 'raw', 'IO layer should be "raw"';
 isa_ok($notifier, 'SVN::Notify');
 ok( $notifier->prepare, "Single method call prepare" );
 ok( $notifier->execute, "Diff notify" );
@@ -198,14 +206,17 @@ is( scalar @{[$email =~ m{(--[^-\s]+--)}g]}, 1,
 ##############################################################################
 # Try to_regex_map.
 ##############################################################################
-ok( $notifier = SVN::Notify->new(%args, to_regex_map => {
+my $regex_map = {
     'one@example.com'  => 'AccessorBuilder',
     'two@example.com'  => '^/trunk',
     'none@example.com' => '/branches',
-}), "Construct new regex_map notifier" );
+};
+ok( $notifier = SVN::Notify->new(%args, to_regex_map => $regex_map),
+    "Construct new regex_map notifier" );
 isa_ok($notifier, 'SVN::Notify');
 ok( $notifier->prepare, "Prepare to_regex_map" );
 ok( $notifier->execute, "Notify to_regex_map" );
+is keys %$regex_map, 3, 'The regex map hash should be unchanged';
 
 # Check the output.
 $email = get_output();
