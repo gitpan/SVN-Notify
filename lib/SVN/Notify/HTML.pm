@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 2771 2006-04-03 23:10:02Z theory $
+# $Id: HTML.pm 2779 2006-04-04 23:15:42Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.55';
+$SVN::Notify::HTML::VERSION = '2.56';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -63,9 +63,7 @@ in SVN::Notify, but when using F<svnnotify>, specify C<--handler HTML>.
 
 =head3 new
 
-=head3 new
-
-  my $notifier = SVN::Notify->new(%params);
+  my $notifier = SVN::Notify::HTML->new(%params);
 
 Constructs and returns a new SVN::Notify object. All parameters supported by
 SVN::Notity are supported here, but SVN::Notify::HTML supports a few
@@ -440,6 +438,29 @@ sub output_diff {
     return $self;
 }
 
+##############################################################################
+
+=head2 Accessors
+
+In addition to those supported by L<SVN::Notify|SVN::Notify/Accessors>,
+SVN::Notify::HTML supports the following accessors:
+
+=head3 linkize
+
+  my $linkize = $notifier->linkize;
+  $notifier = $notifier->linkize($linkize);
+
+Gets or sets the value of the C<linkize> attribute.
+
+=head3 css_url
+
+  my $css_url = $notifier->css_url;
+  $notifier = $notifier->css_url($css_url);
+
+Gets or sets the value of the C<css_url> attribute.
+
+=cut
+
 1;
 __END__
 
@@ -457,7 +478,7 @@ David Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2005 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2006 Kineticode, Inc. All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.

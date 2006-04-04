@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: html.t 2770 2006-04-03 22:31:33Z theory $
+# $Id: html.t 2778 2006-04-04 23:07:47Z theory $
 
 use strict;
 use Test::More;
@@ -9,12 +9,12 @@ use File::Spec::Functions;
 if ($^O eq 'MSWin32') {
     plan skip_all => "SVN::Notify::HTML not yet supported on Win32";
 } elsif (eval { require HTML::Entities }) {
-    plan tests => 194;
+    plan tests => 195;
 } else {
     plan skip_all => "SVN::Notify::HTML requires HTML::Entities";
 }
 
-BEGIN { use_ok('SVN::Notify::HTML') }
+use_ok('SVN::Notify::HTML');
 
 my $ext = $^O eq 'MSWin32' ? '.bat' : '';
 
