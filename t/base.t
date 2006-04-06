@@ -1,16 +1,10 @@
 #!perl -w
 
-# $Id: base.t 2778 2006-04-04 23:07:47Z theory $
+# $Id: base.t 2784 2006-04-06 04:45:33Z theory $
 
 use strict;
-use Test::More;
+use Test::More tests => 183;
 use File::Spec::Functions;
-
-if ($^O eq 'MSWin32') {
-    plan skip_all => "SVN::Notify not yet supported on Win32";
-} else {
-    plan tests => 183;
-}
 
 use_ok('SVN::Notify');
 
@@ -492,8 +486,17 @@ like $email, qr{Diff output truncated at 1024 characters.},
 ##############################################################################
 # Test file_exe
 ##############################################################################
+my $look = catfile($dir, 'testsvnlook');
+
+if (SVN::Notify::WIN32()) {
+    require File::Copy;
+    $ext = '.exe';
+    File::Copy::copy("$look.bat", "$look.exe");
+}
 is +SVN::Notify->find_exe('testsvnlook'),  catfile($dir, "testsvnlook$ext"),
     'find_exe should find the test script';
+
+unlink "$look.exe" if SVN::Notify::WIN32();
 
 ##############################################################################
 # Functions.

@@ -1,14 +1,12 @@
 #!perl -w
 
-# $Id: html.t 2778 2006-04-04 23:07:47Z theory $
+# $Id: html.t 2784 2006-04-06 04:45:33Z theory $
 
 use strict;
 use Test::More;
 use File::Spec::Functions;
 
-if ($^O eq 'MSWin32') {
-    plan skip_all => "SVN::Notify::HTML not yet supported on Win32";
-} elsif (eval { require HTML::Entities }) {
+if (eval { require HTML::Entities }) {
     plan tests => 195;
 } else {
     plan skip_all => "SVN::Notify::HTML requires HTML::Entities";

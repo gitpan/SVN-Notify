@@ -1,5 +1,15 @@
 Revision history for Perl extension SVN::Notify
 
+2.57  2006-04-06T22:36:18
+      - Finally ported to Win32. It was actually a simple matter of changing
+        how command pipes are created.
+      - Added 'smtp' option to enable sending messages to an SMTP server
+        rather than to the local 'sendmail' application. This is essential for
+        Windows support.
+      - Added --io-layer to the usage statement in 'svnnotify'.
+      - Fixed single-dash arguments in documentaion so that they're all
+        documented with a single dash in SVN::Notify.
+
 2.56  2006-04-04T23:16:37
       - Abstracted creation of the diff file handle into the new diff_handle()
         method.
@@ -16,7 +26,7 @@ Revision history for Perl extension SVN::Notify
         implementation by Jukka Zitting.
       - Fixed use_ok() tests that weren't running at all.
       - Added an extra newline to separate the file list from an inline diff
-        in the plain text format where <--with-diff> has been specified.
+        in the plain text format where '--with-diff' has been specified.
       - Moved the "multipart/mixed" content-type header generation from
         output_headers() to output_content_type(), not only because this makes
         more sense, but also because it makes attachments behave better when
@@ -30,7 +40,7 @@ Revision history for Perl extension SVN::Notify
       - Fixed the context output in the subject for the '--subject-cx' option
         so that it's smarter about determining the longest common path.
         Reported by Max Horn.
-      - No longer modifying the values of the 'to-regex-map' hash, so as not
+      - No longer modifying the values of the 'to_regex_map' hash, so as not
         to mess with folks who might be passing it as a hash to more than one
         call to new(). Reported by Darby Felton.
       - Added a 'meta http-equiv="content-type"' tag to HTML output that
@@ -47,7 +57,7 @@ Revision history for Perl extension SVN::Notify
 2.54  2006-03-06T00:33:42
       - Added "/usr/bin" to the list of paths searched for executables.
         Suggested by Nacho Barrientos.
-      - Added 'max-diff-length' option. Patch from David Burley/SourceForge.
+      - Added '--max-diff-length' option. Patch from David Burley/SourceForge.
 
 2.53  2006-02-24T21:30:48
       - Added 'header' and 'footer' attributes and command-line options to
@@ -73,8 +83,8 @@ Revision history for Perl extension SVN::Notify
 
 2.52  2006-02-19T18:50:24
       - Now uses File::Spec->path to search for a validate sendmail or svnlook
-        when they're not specified via their respetive command-line options or
-        environment variables. Suggested by Andreas Koenig. Not that they
+        when they're not specified via their respective command-line options
+        or environment variables. Suggested by Andreas Koenig. Not that they
         should probably be explicitly set anyway, as the PATH environment
         variable tends to be non-existent when running under Apache.
 
