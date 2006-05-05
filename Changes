@@ -1,5 +1,17 @@
 Revision history for Perl extension SVN::Notify
 
+2.58  2006-05-05T20:44:05
+      - Improved documentation of '--ticket-regex', since it seemed to confuse
+        people using it with SVN::Notify::HTML. Thanks to Dominic Giampaolo
+        for the push.
+      - SVN::Notify::HTML now allows '--ticket-regex' to capture only one
+        string, in which case it will be used both for the link text and for
+        the tickget number passed to the '--ticket-url' format string.
+      - Added support for SMTP authentication using Net::SMTP_auth. Use the
+        '--smtp-user', '--smtp-pass', and '--smtp-authtype' options to take
+        advantage of this feature. Patch from Eric Lemes.
+      - Specifying '--verbose' two or more times now turns on SMTP debugging.
+
 2.57  2006-04-06T22:36:18
       - Finally ported to Win32. It was actually a simple matter of changing
         how command pipes are created.
@@ -7,7 +19,7 @@ Revision history for Perl extension SVN::Notify
         rather than to the local 'sendmail' application. This is essential for
         Windows support.
       - Added --io-layer to the usage statement in 'svnnotify'.
-      - Fixed single-dash arguments in documentaion so that they're all
+      - Fixed single-dash arguments in documentation so that they're all
         documented with a single dash in SVN::Notify.
 
 2.56  2006-04-04T23:16:37

@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 2785 2006-04-06 06:15:26Z theory $
+# $Id: options.t 2836 2006-05-05 20:42:04Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -18,6 +18,9 @@ my %testopts = (
 
 my %params = (
     smtp            => undef,
+    smtp_user       => undef,
+    smtp_pass       => undef,
+    smtp_authtype   => undef,
     to_regex_map    => undef,
     from            => undef,
     user_domain     => undef,
