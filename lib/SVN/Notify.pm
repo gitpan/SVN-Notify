@@ -1,11 +1,11 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 2836 2006-05-05 20:42:04Z theory $
+# $Id: Notify.pm 2847 2006-05-11 17:22:06Z theory $
 
 use strict;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007;
-$SVN::Notify::VERSION = '2.58';
+$SVN::Notify::VERSION = '2.59';
 
 =begin comment
 
@@ -58,6 +58,25 @@ repository directory; consult the documentation in F<post-commit.tmpl> for
 details. Make sure that you specify the complete path to F<svnnotify>, as well
 as to F<svnlook> and F<sendmail> in the options passed to F<svnnotify> so that
 everything executes properly.
+
+=head2 Windows Usage
+
+Go get SVN::Notify to work properly in a F<post-commit> script, you must set
+the following environment variables, as they will likley not be present inside
+Apache:
+
+=over
+
+=item PATH=C:\perl\bin
+
+=item OS=Windows_NT
+
+=item SystemRoot=C:\WINDOWS
+
+=back
+
+See L<http://svn.haxx.se/users/archive-2006-05/0593.shtml> for more detailed
+information on getting SVN::NOtify running on Windows.
 
 =cut
 
@@ -229,9 +248,9 @@ The password for SMTP authentication. Use in parallel with C<smtp_user>.
   svnnotify --smtp-authtype authtype
 
 The authentication method to use for authenticating to the SMTP server. The
-available athentication types include "PLAIN", "NTLM", "CRAM_MD5", and others.
-Consult the L<Authen::SASL|Authen::SASL> documentation for a complete list.
-Defaults to "PLAIN".
+available authentication types include "PLAIN", "NTLM", "CRAM_MD5", and
+others. Consult the L<Authen::SASL|Authen::SASL> documentation for a complete
+list. Defaults to "PLAIN".
 
 =item charset
 
@@ -521,6 +540,9 @@ sub new {
     $params{smtp_authtype}  ||= 'PLAIN';
     $params{sendmail}       ||= $ENV{SENDMAIL} || $class->find_exe('sendmail')
         unless $params{smtp};
+
+    die qq{Cannot find sendmail and no "smtp" parameter specified}
+        unless $params{sendmail} || $params{smtp};
 
     # svnweb_url and viewcvs_url are mutually exlusive.
     if ($params{svnweb_url} && $params{svnweb_url} !~ /%s/) {
@@ -1728,12 +1750,14 @@ Gets or set the value of the C<footer> attribute.
 
 sub _pipe {
     my ($self, $mode) = (shift, shift);
-    $self->_dbpnt( "Piping execution of '" . join("', '", @_) . "'")
+    $self->_dbpnt( q{Piping execution of "} . join(q{" "}, @_) . q{"})
       if $self->{verbose};
     # Safer version of backtick (see perlipc(1)).
     local *PIPE;
     if (WIN32) {
-        my $cmd = $mode eq '-|' ? join(q{ }, @_) . '|' : '|' . join q{ }, @_;
+        my $cmd = $mode eq '-|'
+            ? q{"}  . join(q{" "}, @_) . q{"|}
+            : q{|"} . join(q{" "}, @_) . q{"};
         open PIPE, $cmd or die "Cannot fork: $!\n";
         return *PIPE;
     }
@@ -1791,7 +1815,7 @@ sub get_handle {
     my $smtp = $smtp_class->new(
         $notifier->{smtp},
         ( $notifier->{verbose} > 1 ? ( Debug => 1 ) : ())
-    );
+    ) or die "Unable to create $smtp_class object: $!";
 
     $smtp->auth( @{ $notifier }{qw(smtp_authtype smtp_user smtp_pass)} )
         if $notifier->{smtp_user};
@@ -1834,6 +1858,10 @@ Subclasses SVN::Notify.
 =item L<https://sourceforge.net/docs/E09#svn_notify>
 
 SourceForge.net support for SVN::Notify.
+
+=item L<http://svn.haxx.se/users/archive-2006-05/0593.shtml>
+
+Tutorial for installing Apache, Subversion, and SVN::Notify on Windows.
 
 =back
 

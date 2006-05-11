@@ -1,12 +1,27 @@
 Revision history for Perl extension SVN::Notify
 
+2.59  2006-05-11T17:23:12
+      - Fixed a few typos, with thanks to Marshall "Eagle Eyes" Roch.
+      - Now throw an exception if 'sendmail' is not specified or cannot be
+        found and 'smtp' is not specified. Reported by Eric Lemes.
+      - Fixed processing of commad-line arguments under Windows. Reported by
+        Eric Lemes. This means that SVN::Notify has now been confirmed to
+        actually *work* on Windows.
+      - An exception will now be thrown if a Net::SMTP object cannot be
+        created. Reported by Eric Lemes.
+      - Added note for Windows users about setting environment variables
+        required by SVN::Notify. Thanks to Eric Lemes <ericlemes@gmail.com>
+        for figuring these things out!\
+      - Added link to Eric Lemes's tutorial for installing Apache, Subversion,
+        and SVN::Notify on Windows.
+
 2.58  2006-05-05T20:44:05
       - Improved documentation of '--ticket-regex', since it seemed to confuse
         people using it with SVN::Notify::HTML. Thanks to Dominic Giampaolo
         for the push.
       - SVN::Notify::HTML now allows '--ticket-regex' to capture only one
         string, in which case it will be used both for the link text and for
-        the tickget number passed to the '--ticket-url' format string.
+        the ticket number passed to the '--ticket-url' format string.
       - Added support for SMTP authentication using Net::SMTP_auth. Use the
         '--smtp-user', '--smtp-pass', and '--smtp-authtype' options to take
         advantage of this feature. Patch from Eric Lemes.
