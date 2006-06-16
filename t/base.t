@@ -1,9 +1,9 @@
 #!perl -w
 
-# $Id: base.t 2784 2006-04-06 04:45:33Z theory $
+# $Id: base.t 2908 2006-06-16 21:52:24Z theory $
 
 use strict;
-use Test::More tests => 183;
+use Test::More tests => 196;
 use File::Spec::Functions;
 
 use_ok('SVN::Notify');
@@ -48,6 +48,8 @@ is($notifier->io_layer, 'encoding(UTF-8)', 'Check IO layer');
 is($notifier->language, undef, "Check language accessor" );
 is($notifier->with_diff, $args{with_diff}, "Check with_diff accessor" );
 is($notifier->attach_diff, $args{attach_diff}, "Check attach_diff accessor" );
+is($notifier->diff_switches, $args{diff_switches},
+   "Check diff_switches accessor" );
 is($notifier->reply_to, $args{reply_to}, "Check reply_to accessor" );
 is($notifier->subject_prefix, $args{subject_prefix},
    "Check subject_prefix accessor" );
@@ -56,6 +58,7 @@ is($notifier->max_sub_length, $args{max_sub_length},
    "Check max_sub_length accessor" );
 is($notifier->viewcvs_url, $args{viewcvs_url}, "Check viewcvs_url accessor" );
 is($notifier->svnweb_url, $args{svnweb_url}, "Check svnweb_url accessor" );
+is($notifier->author_url, $args{author_url}, "Check author_url accessor" );
 is($notifier->verbose, 0, "Check verbose accessor" );
 is($notifier->user, 'theory', "Check user accessor" );
 is($notifier->date, '2004-04-20 01:33:35 -0700 (Tue, 20 Apr 2004)',
@@ -313,7 +316,7 @@ ok( $notifier->execute, "Notify viewcvs_url" );
 
 # Check the output.
 $email = get_output();
-like( $email, qr|ViewCVS:\s+http://svn\.example\.com/\?rev=111\&view=rev\n|,
+like( $email, qr|Revision:\s+111\n\s+http://svn\.example\.com/\?rev=111\&view=rev\n|,
       'Check for URL');
 
 ##############################################################################
@@ -329,8 +332,24 @@ ok( $notifier->execute, "Notify svnweb_url" );
 
 # Check the output.
 $email = get_output();
-like( $email, qr|SVNWeb:\s+http://svn\.example\.com/\?rev=111\&view=rev\n|,
+like( $email, qr|Revision:\s+111\n\s+http://svn\.example\.com/\?rev=111\&view=rev\n|,
       'Check for URL');
+
+##############################################################################
+# Try author_url.
+##############################################################################
+ok( $notifier = SVN::Notify->new(
+    %args,
+    author_url => 'http://svn.example.com/~%s/',
+   ), "Construct new author_url notifier" );
+isa_ok($notifier, 'SVN::Notify');
+ok( $notifier->prepare, "Prepare author_url" );
+ok( $notifier->execute, "Notify author_url" );
+
+# Check the output.
+$email = get_output();
+like( $email, qr|Author:\s+theory\n\s+http://svn\.example\.com/~theory/\n|,
+      'Check for author URL');
 
 ##############################################################################
 # Try charset.
@@ -368,9 +387,9 @@ ok( $notifier->execute, "Notify URL" );
 $email = get_output();
 
 # Check for application URLs.
-like( $email, qr|ViewCVS:\s+http://viewsvn\.bricolage\.cc/\?rev=222\&view=rev\n|,
+like( $email, qr|Revision:\s+222\n\s+http://viewsvn\.bricolage\.cc/\?rev=222\&view=rev\n|,
       'Check for main ViewCVS URL');
-like($email, qr/ViewCVS Links:\n/, 'Check for ViewCVS Links label' );
+like($email, qr/Revision Links:\n/, 'Check for ViewCVS Links label' );
 like($email,
      qr{    http://viewsvn\.bricolage\.cc/\?rev=606&view=rev\n},
      "Check for log mesage ViewCVS URL");
@@ -459,6 +478,27 @@ like $email, qr{This is the header\n\nRevision: 111},
       'Check for the header';
 
 like $email, qr/This is the footer\s+\Z/, 'Check for the footer';
+
+##############################################################################
+# Try diff-switches
+##############################################################################
+ok( $notifier = SVN::Notify->new(
+    %args,
+    revision      => '111',
+    with_diff     => 1,
+    diff_switches => '--no-diff-added',
+), 'Construct new diff_switches notifier' );
+
+isa_ok $notifier, 'SVN::Notify';
+is $notifier->diff_switches, '--no-diff-added', 'Check diff_switches()';
+ok $notifier->prepare, 'Prepare header and footer checking';
+ok $notifier->execute, 'Notify header and footer checking';
+
+# Check the output.
+$email = get_output();
+like $email,
+    qr{Added:\s+trunk/Params-CallbackRequest/lib/Params/Callback\.pm\s+\Z},
+    'Make sure the added file is omitted from the diff';
 
 ##############################################################################
 # Try max_diff_size

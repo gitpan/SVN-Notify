@@ -1,11 +1,11 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 2847 2006-05-11 17:22:06Z theory $
+# $Id: Notify.pm 2909 2006-06-16 22:40:07Z theory $
 
 use strict;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007;
-$SVN::Notify::VERSION = '2.59';
+$SVN::Notify::VERSION = '2.60';
 
 =begin comment
 
@@ -304,6 +304,16 @@ file, named for the user who triggered the commit and the date and time UTC at
 which the commit took place. Specifying this parameter to a true value
 implicitly sets the C<with_diff> parameter to a true value.
 
+=item diff_switches
+
+  svnnotify --diff-switches '--no-diff-added'
+  svnnotify -w '--no-diff-deleted'
+
+Switches to pass to C<svnlook diff>, such as C<--no-diff-deleted> and
+C<--no-diff-added>. And who knows, maybe someday it will support the same
+options as C<svn diff>, such as C<--diff-cmd> and C<--extensions>. Only
+relevant when used with C<with_diff> or C<attach_diff>.
+
 =item reply_to
 
   svnnotify --reply-to devlist@example.com
@@ -404,25 +414,38 @@ F<svnnotify>. Be sure to read the documentation for your subclass of choice,
 as there may be additional parameters and existing parameters may behave
 differently.
 
+=item author_url
+
+  svnnotify --author-url 'http://svn.example.com/changelog/~author=%s/repos'
+  svnnotify --A 'mailto:%s@example.com'
+
+If a URL is specified for this parameter, then it will be used to create a
+link for the current author. The URL can have the "%s" format where the
+author's username should be put into the URL.
+
+=item revision_url
+
+  svnnotify --revision-url 'http://svn.example.com/changelog/?cs=%s'
+  svnnotify -U 'http://svn.example.com/changelog/?cs=%s'
+
+If a URL is specified for this parameter, then it will be used to create a
+link to the Subversion browser URL corresponding to the current revision
+number. It will also be used to create links to any other revision numbers
+mentioned in the commit message. The URL must have the "%s" format where the
+Subversion revision number should be put into the URL.
+
 =item svnweb_url
 
   svnnotify --svnweb-url 'http://svn.example.com/index.cgi/revision/?rev=%s'
   svnnotify -S 'http://svn.example.net/index.cgi/revision/?rev=%s'
 
-If a URL is specified for this parameter, then it will be used to create a
-link to the L<SVN::Web|SVN::Web> URL corresponding to the current revision
-number. The URL must have the "%s" format where the Subversion revision number
-should be put into the URL. Mutually exclusive with C<viewcvs_url>.
+Deprecated. Use C<revision_url> instead.
 
 =item viewcvs_url
 
   svnnotify --viewcvs-url 'http://svn.example.com/viewcvs/?rev=%s&view=rev'
-  svnnotify -U 'http://svn.example.net/viewcvs?rev=%s&view=rev'
 
-If a URL is specified for this parameter, then it will be used to create a
-link to the ViewCVS URL corresponding to the current revision number. The URL
-must have the "%s" format where the Subversion revision number should be put
-into the URL. Mutually exclusive with C<svnweb_url>.
+Deprecated. Use C<revision_url> instead.
 
 =item rt_url
 
@@ -544,14 +567,12 @@ sub new {
     die qq{Cannot find sendmail and no "smtp" parameter specified}
         unless $params{sendmail} || $params{smtp};
 
-    # svnweb_url and viewcvs_url are mutually exlusive.
-    if ($params{svnweb_url} && $params{svnweb_url} !~ /%s/) {
-        warn "--svnweb-url must have '%s' format\n";
-        $params{svnweb_url} .= '/revision/?rev=%s&view=rev'
-    }
-    if ($params{viewcvs_url} && $params{viewcvs_url} !~ /%s/) {
-        warn "--viewcvs-url must have '%s' format\n";
-        $params{viewcvs_url} .= '?rev=%s&view=rev'
+    # Set up the revision URL.
+    $params{revision_url} ||= delete $params{svnweb_url}
+                          ||  delete $params{viewcvs_url};
+    if ($params{revision_url} && $params{revision_url} !~ /%s/) {
+        warn "--revision-url must have '%s' format\n";
+        $params{revision_url} .= '/revision/?rev=%s&view=rev'
     }
 
     # Make it so!
@@ -652,6 +673,7 @@ sub get_options {
         'language|g=s'        => \$opts->{language},
         'with-diff|d'         => \$opts->{with_diff},
         'attach-diff|a'       => \$opts->{attach_diff},
+        'diff-switches|w=s'   => \$opts->{diff_switches},
         'reply-to|R=s'        => \$opts->{reply_to},
         'subject-prefix|P=s'  => \$opts->{subject_prefix},
         'subject-cx|C'        => \$opts->{subject_cx},
@@ -660,8 +682,7 @@ sub get_options {
         'max-sub-length|i=i'  => \$opts->{max_sub_length},
         'max-diff-length|e=i' => \$opts->{max_diff_length},
         'handler|H=s'         => \$opts->{handler},
-        'viewcvs-url|U=s'     => \$opts->{viewcvs_url},
-        'svnweb-url|S=s'      => \$opts->{svnweb_url},
+        'author-url|A=s'      => \$opts->{author_url},
         'rt-url|T=s'          => \$opts->{rt_url},
         'bugzilla-url|B=s'    => \$opts->{bugzilla_url},
         'jira-url|J=s'        => \$opts->{jira_url},
@@ -677,6 +698,7 @@ sub get_options {
         'smtp-user=s'         => \$opts->{smtp_user},
         'smtp-pass=s'         => \$opts->{smtp_pass},
         'smtp-authtype=s'     => \$opts->{smtp_authtype},
+        'revision-url|U|svnweb-url|S|viewcvs-url=s' => \$opts->{revision_url},
     ) or return;
 
     # Load a subclass if one has been specified.
@@ -1171,25 +1193,27 @@ sub start_body {
   $notifier->output_metadata($file_handle);
 
 This method outputs the metadata of the commit, including the revision number,
-author (user), and date of the revision. If the C<viewcvs_url> or
-C<svnweb_url> attributes have been set, then the appropriate URL(s) for the
-revision will also be output.
+author (user), and date of the revision. If the C<author_url>, C<viewcvs_url>,
+or C<revision_url> attributes have been set, then the appropriate URL(s) for
+the revision will also be output.
 
 =cut
 
 sub output_metadata {
     my ($self, $out) = @_;
-    print $out
-      "Revision: $self->{revision}\n",
-      "Author:   $self->{user}\n",
-      "Date:     $self->{date}\n";
-
-    # svnweb_url and viewcvs_url are mutually exlusive.
-    if ($self->{svnweb_url}) {
-        printf $out "SVNWeb:   $self->{svnweb_url}\n", $self->{revision};
-    } elsif ($self->{viewcvs_url}) {
-        printf $out "ViewCVS:  $self->{viewcvs_url}\n", $self->{revision};
+    print $out "Revision: $self->{revision}\n";
+    if (my $url = $self->{revision_url}) {
+        printf $out "          $url\n", $self->{revision};
     }
+
+    # Output the Author any any relevant URL.
+    print $out "Author:   $self->{user}\n";
+    if (my $url = $self->{author_url}) {
+        printf $out "          $url\n", $self->{user};
+    }
+
+    print $out "Date:     $self->{date}\n";
+
 
     print $out "\n";
     return $self;
@@ -1211,18 +1235,10 @@ sub output_log_message {
     my $msg = join "\n", @{$self->{message}};
     print $out "Log Message:\n-----------\n$msg\n";
 
-    # Make SVN::Web links. Mutually exclusive with viewcvs.
-    if (my $url = $self->svnweb_url) {
+    # Make Revision links. Mutually exclusive with viewcvs.
+    if (my $url = $self->{revision_url}) {
         if (my @matches = $msg =~ /\b(?:rev(?:ision)?\s*#?\s*(\d+))\b/ig) {
-            print $out "\nSVNWeb Links:\n-------------\n";
-            printf $out "    $url\n", $_ for @matches;
-        }
-    }
-
-    # Make ViewCVS links. Mutually exclusive with svnweb.
-    elsif ($url = $self->viewcvs_url) { # No my; $url is still in scope.
-        if (my @matches = $msg =~ /\b(?:rev(?:ision)?\s*#?\s*(\d+))\b/ig) {
-            print $out "\nViewCVS Links:\n-------------\n";
+            print $out "\nRevision Links:\n--------------\n";
             printf $out "    $url\n", $_ for @matches;
         }
     }
@@ -1408,7 +1424,14 @@ sub diff_handle {
     return $self->_pipe(
         '-|'   => $self->{svnlook},
         'diff' => $self->{repos_path},
-        '-r'   => $self->{revision}
+        '-r'   => $self->{revision},
+        ( $self->{diff_switches}
+            ? grep { defined && $_ ne '' }
+                # Allow quoting of arguments, but strip out the quotes.
+                split /(?:'([^']+)'|"([^"]+)")?\s+(?:'([^']+)'|"([^"]+)")?/,
+                $self->{diff_switches}
+            : ()
+        ),
     );
 }
 
@@ -1464,13 +1487,14 @@ __PACKAGE__->_accessors(qw(
     language
     with_diff
     attach_diff
+    diff_switches
     reply_to
     subject_prefix
     subject_cx
     max_sub_length
     max_diff_length
-    viewcvs_url
-    svnweb_url
+    author_url
+    revision_url
     rt_url
     bugzilla_url
     jira_url
@@ -1507,6 +1531,10 @@ sub _accessors {
         };
     }
 }
+
+# Aliases for deprecated attributes.
+sub svnweb_url  { shift->revision_url(@_) }
+sub viewcvs_url { shift->revision_url(@_) }
 
 =head2 Accessors
 
@@ -1609,6 +1637,13 @@ Gets or sets the value of the C<with_diff> attribute.
 
 Gets or sets the value of the C<attach_diff> attribute.
 
+=head3 diff_switches
+
+  my $diff_switches = $notifier->diff_switches;
+  $notifier = $notifier->diff_switches($diff_switches);
+
+Gets or sets the value of the C<diff_switches> attribute.
+
 =head3 reply_to
 
   my $reply_to = $notifier->reply_to;
@@ -1644,21 +1679,27 @@ Gets or sets the value of the C<max_sub_length> attribute.
 
 Gets or set the value of the C<max_diff_length> attribute.
 
+=head3 author_url
+
+  my $author_url = $notifier->author_url;
+  $notifier = $notifier->author_url($author_url);
+
+Gets or sets the value of the C<author_url> attribute.
+
+=head3 revision_url
+
+  my $revision_url = $notifier->revision_url;
+  $notifier = $notifier->revision_url($revision_url);
+
+Gets or sets the value of the C<revision_url> attribute.
+
 =head3 svnweb_url
 
-  my $svnweb_url = $notifier->svnweb_url;
-  $notifier = $notifier->svnweb_url($svnweb_url);
-
-Gets or sets the value of the C<svnweb_url> attribute. Mutually exclusive with
-C<viewcvs_url>.
+Deprecated. Pleas use C<revision_url()>, instead.
 
 =head3 viewcvs_url
 
-  my $viewcvs_url = $notifier->viewcvs_url;
-  $notifier = $notifier->viewcvs_url($viewcvs_url);
-
-Gets or sets the value of the C<viewcvs_url> attribute. Mutually exclusive
-with C<svnweb_url>.
+Deprecated. Pleas use C<revision_url()>, instead.
 
 =head3 verbose
 

@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 2838 2006-05-05 20:48:39Z theory $
+# $Id: HTML.pm 2907 2006-06-16 04:15:23Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.59';
+$SVN::Notify::HTML::VERSION = '2.60';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -244,8 +244,8 @@ sub output_css {
 
 This method outputs a definition list containting the metadata of the commit,
 including the revision number, author (user), and date of the revision. If the
-C<svnweb_url> or C<viewcvs_url> attribute has been set, then the appropriate
-URL for the revision will be used to turn the revision number into a link.
+C<revision_url> attribute has been set, then the appropriate URL for the
+revision will be used to turn the revision number into a link.
 
 =cut
 
@@ -254,7 +254,7 @@ sub output_metadata {
     print $out "<dl>\n<dt>Revision</dt> <dd>";
 
     my $rev = $self->revision;
-    if (my $url = $self->svnweb_url || $self->viewcvs_url) {
+    if (my $url = $self->revision_url) {
         $url = encode_entities($url, '<>&"');
         # Make the revision number a URL.
         printf $out qq{<a href="$url">$rev</a>}, $rev;
@@ -263,8 +263,18 @@ sub output_metadata {
         print $out $rev;
     }
 
+    # Output the committer and a URL, if there is one.
+    print $out "</dd>\n<dt>Author</dt> <dd>";
+    my $user = encode_entities($self->user, '<>&"');
+    if (my $url = $self->author_url) {
+        $url = encode_entities($url, '<>&"');
+        printf $out qq{<a href="$url">$user</a>}, $user;
+    } else {
+        # Just output the username
+        print $out $user;
+    }
+
     print $out "</dd>\n",
-      "<dt>Author</dt> <dd>", encode_entities($self->user, '<>&"'), "</dd>\n",
       "<dt>Date</dt> <dd>", encode_entities($self->date, '<>&"'), "</dd>\n",
       "</dl>\n\n";
 
@@ -305,8 +315,8 @@ sub output_log_message {
 
     }
 
-    # Make SVNWeb/ViewCVS links.
-    if (my $url = $self->svnweb_url || $self->viewcvs_url) {
+    # Make Revision links.
+    if (my $url = $self->revision_url) {
         $url = encode_entities($url, '<>&"');
         $msg =~ s|\b(rev(?:ision)?\s*#?\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ige;
     }
@@ -384,8 +394,8 @@ sub output_file_lists {
         if ($self->with_diff && !$self->attach_diff) {
             for (@{ $files->{$type} }) {
                 my $file = encode_entities($_, '<>&"');
-                if ($file =~ m{/$}) {
-                    # Directories don't link to the diff.
+                if ($file =~ m{/$} && $type ne '_') {
+                    # Directories don't link, unless it's a prop change.
                     print $out qq{<li>$file</li>\n};
                 } else {
                     # Strip out letters illegal for IDs.

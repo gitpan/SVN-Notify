@@ -1,12 +1,12 @@
 package SVN::Notify::HTML::ColorDiff;
 
-# $Id: ColorDiff.pm 2838 2006-05-05 20:48:39Z theory $
+# $Id: ColorDiff.pm 2908 2006-06-16 21:52:24Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify::HTML ();
 
-$SVN::Notify::HTML::ColorDiff::VERSION = '2.59';
+$SVN::Notify::HTML::ColorDiff::VERSION = '2.60';
 @SVN::Notify::HTML::ColorDiff::ISA = qw(SVN::Notify::HTML);
 
 =head1 Name
@@ -123,8 +123,14 @@ sub output_diff {
             print $out "</$in_span>" if $in_span;
             print $out "</span></pre></div>\n" if $in_div;
 
-            # Dump line.
-            <$diff>;
+            # Dump line, but check it's content.
+            if (<$diff> !~ /^=/) {
+                # Looks like they used --no-diff-added or --no-diff-deleted.
+                ($in_span, $in_div) = '';
+                print $out qq{<a id="$id"></a>\n<div class="$class">},
+                    qq{<h4>$action: $file</h4></div>\n};
+                next;
+            }
 
             # Get the revision numbers.
             my $before = <$diff>;

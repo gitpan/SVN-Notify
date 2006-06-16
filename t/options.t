@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 2836 2006-05-05 20:42:04Z theory $
+# $Id: options.t 2908 2006-06-16 21:52:24Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -29,6 +29,7 @@ my %params = (
     language        => undef,
     with_diff       => undef,
     attach_diff     => undef,
+    diff_switches   => undef,
     reply_to        => undef,
     subject_prefix  => undef,
     subject_cx      => undef,
@@ -36,8 +37,8 @@ my %params = (
     max_sub_length  => undef,
     max_diff_length => undef,
     handler         => undef,
-    viewcvs_url     => undef,
-    svnweb_url      => undef,
+    author_url      => undef,
+    revision_url    => undef,
     rt_url          => undef,
     bugzilla_url    => undef,
     gnats_url       => undef,
