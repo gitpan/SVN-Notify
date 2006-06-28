@@ -1,11 +1,11 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 2909 2006-06-16 22:40:07Z theory $
+# $Id: Notify.pm 2917 2006-06-28 23:06:10Z theory $
 
 use strict;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007;
-$SVN::Notify::VERSION = '2.60';
+$SVN::Notify::VERSION = '2.61';
 
 =begin comment
 
@@ -136,12 +136,11 @@ F<post-commit> for details. Required.
 =item to
 
   svnnotify --to commiters@example.com
-  svnnotify -t commiters@example.com
+  svnnotify -t commiters@example.com --to managers@example.com
 
-The address or addresses to which to send the notification email. To specify
-multiple addresses, simply put them all into a comma-delimited list suitable
-for an SMTP "From" header. This parameter is required unless C<to_regex_map>
-is specified.
+The address or addresses to which to send the notification email. Can be used
+multiple times to specify multiple addresses. This parameter is required
+unless C<to_regex_map> is specified.
 
 =item to_regex_map
 
@@ -219,6 +218,17 @@ F<sendmail> via this option or by setting the C<$SENDMAIL> environment
 variable if F<sendmail> isn't in your path or to avoid loading
 L<File::Spec|File::Spec>. The same caveats as applied to the location of the
 F<svnlook> executable apply here.
+
+=item set_sender
+
+  svnnotify --set-sender
+  svnnotify -E
+
+Uses the C<-f> option to C<sendmail> to set the envelope sender address of the
+email to the same address as is used for the "From" header. If you're also
+using the C<from> option, be sure to make it B<only> an email address. Don't
+include any other junk in it, like a sender's name. Ignored when using
+C<smtp>.
 
 =item smtp
 
@@ -544,6 +554,9 @@ sub new {
         }
     }
 
+    # Make sure that the tos are an arrayref.
+    $params{to} = [ $params{to} || () ] unless ref $params{to};
+
     # Check for required parameters.
     $class->_dbpnt( "Checking required parameters to new()")
       if $params{verbose};
@@ -552,7 +565,7 @@ sub new {
     die qq{Missing required "revision" parameter}
       unless $params{revision};
     die qq{Missing required "to" or "to_regex_map" parameter}
-      unless $params{to} || $params{to_regex_map};
+      unless @{ $params{to} } || $params{to_regex_map};
 
     # Set up default values.
     $params{svnlook}        ||= $ENV{SVNLOOK}  || $class->find_exe('svnlook');
@@ -574,6 +587,7 @@ sub new {
         warn "--revision-url must have '%s' format\n";
         $params{revision_url} .= '/revision/?rev=%s&view=rev'
     }
+
 
     # Make it so!
     $class->_dbpnt( "Instantiating $class object") if $params{verbose};
@@ -661,12 +675,13 @@ sub get_options {
     Getopt::Long::GetOptions(
         'repos-path|p=s'      => \$opts->{repos_path},
         'revision|r=s'        => \$opts->{revision},
-        'to|t=s'              => \$opts->{to},
+        'to|t=s@'             => \$opts->{to},
         'to-regex-map|x=s%'   => \$opts->{to_regex_map},
         'from|f=s'            => \$opts->{from},
         'user-domain|D=s'     => \$opts->{user_domain},
         'svnlook|l=s'         => \$opts->{svnlook},
         'sendmail|s=s'        => \$opts->{sendmail},
+        'set-sender|E'        => \$opts->{set_sender},
         'smtp=s'              => \$opts->{smtp},
         'charset|c=s'         => \$opts->{charset},
         'io-layer|o=s'        => \$opts->{io_layer},
@@ -793,7 +808,7 @@ affected directories).
 sub prepare {
     my $self = shift;
     $self->prepare_recipients;
-    return $self unless $self->{to};
+    return $self unless @{ $self->{to} };
     $self->prepare_contents;
     $self->prepare_files;
     $self->prepare_subject;
@@ -821,7 +836,7 @@ sub prepare_recipients {
     my $self = shift;
     $self->_dbpnt( "Preparing recipients list") if $self->{verbose};
     return $self unless $self->{to_regex_map} || $self->{subject_cx};
-    my @to = $self->{to} ? ($self->{to}) : ();
+    my $tos = $self->{to};
     my $regexen = $self->{to_regex_map};
     if ($regexen) {
         $regexen = {%$regexen};
@@ -848,7 +863,7 @@ sub prepare_recipients {
             # If the directory matches the regex, save the email.
             if (/$rx/) {
                 $self->_dbpnt( qq{"$_" matched $rx}) if $self->{verbose} > 2;
-                push @to, $email;
+                push @$tos, $email;
                 delete $regexen->{$email};
             }
         }
@@ -863,9 +878,9 @@ sub prepare_recipients {
     $self->_dbpnt( qq{Context is "$cx"})
         if $self->{subject_cx} && $self->{verbose} > 1;
     close $fh or warn "Child process exited: $?\n";
-    $self->{to} = join ', ', @to;
     $self->{cx} = $cx;
-    $self->_dbpnt( qq{Recipients: "$self->{to}"}) if $self->{verbose} > 1;
+    $self->_dbpnt( 'Recipients: "', join(', ', @$tos), '"')
+        if $self->{verbose} > 1;
     return $self;
 }
 
@@ -1022,11 +1037,14 @@ any other actions in response to Subversion activity.
 sub execute {
     my $self = shift;
     $self->_dbpnt( "Sending message") if $self->{verbose};
-    return $self unless $self->{to};
+    return $self unless @{ $self->{to} };
 
     my $out = $self->{smtp}
         ? SVN::Notify::SMTP->get_handle($self)
-        : $self->_pipe('|-', $self->{sendmail}, '-oi', '-t');
+        : $self->_pipe(
+            '|-', $self->{sendmail}, '-oi', '-t',
+            ($self->{set_sender} ? ('-f', $self->{from}) : ())
+        );
 
     # Output the message.
     $self->output($out);
@@ -1117,7 +1135,8 @@ sub output_headers {
     print $out
       "MIME-Version: 1.0\n",
       "From: $self->{from}\n",
-      "To: $self->{to}\n",
+      "Errors-To: $self->{from}\n",
+      "To: ", join ( ', ', @{ $self->{to} } ), "\n",
       "Subject: $self->{subject}\n";
     print $out "Reply-To: $self->{reply_to}\n" if $self->{reply_to};
     print $out "X-Mailer: SVN::Notify ", $self->VERSION,
@@ -1481,6 +1500,7 @@ __PACKAGE__->_accessors(qw(
     user_domain
     svnlook
     sendmail
+    set_sender
     smtp
     charset
     io_layer
@@ -1594,6 +1614,13 @@ Gets or sets the value of the C<svnlook> attribute.
   $notifier = $notifier->sendmail($sendmail);
 
 Gets or sets the value of the C<sendmail> attribute.
+
+=head3 set_sender
+
+  my $set_sender = $notifier->set_sender;
+  $notifier = $notifier->set_sender($set_sender);
+
+Gets or sets the value of the C<set_sender> attribute.
 
 =head3 smtp
 
@@ -1864,7 +1891,7 @@ sub get_handle {
     binmode tied(*{ $smtp->tied_fh }), ":$notifier->{io_layer}"
         if SVN::Notify::PERL58;
     $smtp->mail($notifier->{from});
-    $smtp->to($notifier->{to});
+    $smtp->to(@{ $notifier->{to} });
     $smtp->data;
     tie local(*SMTP), $class, $smtp;
     return *SMTP;

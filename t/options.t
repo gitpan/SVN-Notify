@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 2908 2006-06-16 21:52:24Z theory $
+# $Id: options.t 2916 2006-06-28 22:56:29Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -17,6 +17,7 @@ my %testopts = (
 );
 
 my %params = (
+    set_sender      => undef,
     smtp            => undef,
     smtp_user       => undef,
     smtp_pass       => undef,
@@ -58,7 +59,7 @@ while (my ($k, $v) = each %testopts) {
     $k =~ s/-/_/g;
     $params{$k} = $v;
 }
-
+$params{to} = [ $params{to} ];
 
 # Make sure that the default options work.
 local @ARGV = %testopts;

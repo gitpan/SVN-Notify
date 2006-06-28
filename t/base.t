@@ -1,9 +1,9 @@
 #!perl -w
 
-# $Id: base.t 2908 2006-06-16 21:52:24Z theory $
+# $Id: base.t 2916 2006-06-28 22:56:29Z theory $
 
 use strict;
-use Test::More tests => 196;
+use Test::More tests => 203;
 use File::Spec::Functions;
 
 use_ok('SVN::Notify');
@@ -18,7 +18,7 @@ my %args = (
     sendmail   => catfile($dir, "testsendmail$ext"),
     repos_path => 'tmp',
     revision   => '111',
-    to         => 'test@example.com',
+    to         => ['test@example.com'],
 );
 
 ##############################################################################
@@ -81,6 +81,7 @@ my $email = get_output();
 like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
       "Check subject" );
 like( $email, qr/From: theory\n/, 'Check From');
+like( $email, qr/Errors-To: theory\n/, 'Check Errors-To');
 like( $email, qr/To: test\@example\.com\n/, 'Check To');
 like( $email, qr{Content-Type: text/plain; charset=UTF-8\n},
       'Check Content-Type' );
@@ -522,6 +523,22 @@ like $email, qr{mod_perl::VERSION < 1.99 \? 'Apache' : 'Apache::RequestRec';},
 unlike $email, qr{ BEGIN }, 'Check for missing extra line';
 like $email, qr{Diff output truncated at 1024 characters.},
     'Check for truncation message';
+
+##############################################################################
+# Try multiple recipients.
+##############################################################################
+my $tos = ['test@example.com', 'try@example.com'];
+ok $notifier = SVN::Notify->new(
+    %args,
+    to => $tos,
+), 'Construct new "multiple to" notifier';
+isa_ok $notifier, 'SVN::Notify';
+is_deeply $notifier->to, $tos, 'Should be arrayref of recipients';
+ok $notifier->prepare, 'Prepare "multiple to" checking';
+ok $notifier->execute, 'Notify "multiple to" checking';
+$email = get_output();
+like $email, qr{To:\s+test\@example\.com,\s+try\@example\.com\n},
+    'Check for both address in the To header';
 
 ##############################################################################
 # Test file_exe
