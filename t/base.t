@@ -1,9 +1,9 @@
 #!perl -w
 
-# $Id: base.t 2916 2006-06-28 22:56:29Z theory $
+# $Id: base.t 2926 2006-06-30 18:01:20Z theory $
 
 use strict;
-use Test::More tests => 203;
+use Test::More tests => 204;
 use File::Spec::Functions;
 
 use_ok('SVN::Notify');
@@ -35,7 +35,7 @@ ok( $notifier->prepare_subject, 'prepare subject');
 # Make sure the attributes work.
 is($notifier->repos_path, $args{repos_path}, "Check repos_path accessor" );
 is($notifier->revision, $args{revision}, "Check revision accessor" );
-is($notifier->to, $args{to}, "Check to accessor" );
+is_deeply([$notifier->to], $args{to}, "Check to accessor" );
 is($notifier->to_regex_map, $args{to_regex_map},
    "Check to_regex_map accessor" );
 is($notifier->from, 'theory', "Check from accessor" );
@@ -427,6 +427,8 @@ ok( $notifier = SVN::Notify->new(
 ),
     "Construct new subject checking notifier" );
 isa_ok($notifier, 'SVN::Notify');
+is_deeply( [ $notifier->strip_cx_regex ], ['^trunk/'],
+           'Check the strip_cx_regex accessor' );
 ok( $notifier->prepare, "Prepare subject checking" );
 ok( $notifier->execute, "Notify subject checking" );
 is( $notifier->subject, '[111] Class-Meta',
@@ -533,7 +535,7 @@ ok $notifier = SVN::Notify->new(
     to => $tos,
 ), 'Construct new "multiple to" notifier';
 isa_ok $notifier, 'SVN::Notify';
-is_deeply $notifier->to, $tos, 'Should be arrayref of recipients';
+is_deeply [$notifier->to], $tos, 'Should be arrayref of recipients';
 ok $notifier->prepare, 'Prepare "multiple to" checking';
 ok $notifier->execute, 'Notify "multiple to" checking';
 $email = get_output();
