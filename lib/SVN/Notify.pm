@@ -1,11 +1,11 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 2925 2006-06-30 17:58:43Z theory $
+# $Id: Notify.pm 3084 2006-08-01 02:13:02Z theory $
 
 use strict;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007;
-$SVN::Notify::VERSION = '2.62';
+$SVN::Notify::VERSION = '2.63';
 
 =begin comment
 
@@ -269,7 +269,8 @@ list. Defaults to "PLAIN".
 
 The character set typically used on the repository for log messages, file
 names, and file contents. Used to specify the character set in the email
-Content-Type headers. Defaults to "UTF-8".
+Content-Type headers and, when the C<language> paremeter is specified, the
+C<$LANG> environment variable when launching C<sendmail>. Defaults to "UTF-8".
 
 =item io_layer
 
@@ -282,7 +283,7 @@ repository uses different character encodings, C<charset> should be set to
 whatever is the most common character encoding, and C<io_layer> is best set to
 C<raw>. In that case, some characters might not look right in the commit
 messaage (because an email can manage only one character encoding at a time),
-but then C<svnnotify> won't get stuck inssuing a slew of warnings.
+but then C<svnnotify> won't get stuck issuing a slew of warnings.
 
 =item language
 
@@ -290,8 +291,11 @@ but then C<svnnotify> won't get stuck inssuing a slew of warnings.
   svnnotify -g i-klingon
 
 The language typically used on the repository for log messages, file names,
-and file contents. Used to specify the email Content-Language header.
-Undefined by default, meaning that no Content-Language header is output.
+and file contents. Used to specify the email Content-Language header and to
+set the C<$LANG> environment variable to C<< $notify->language . '.' .
+$notify->charset >> before executing C<sendmail>. Undefined by default,
+meaning that no Content-Language header is output and the C<$LANG> environment
+variable will not be set.
 
 =item with_diff
 
@@ -332,6 +336,16 @@ relevant when used with C<with_diff> or C<attach_diff>.
 The email address to use in the "Reply-To" header of the notification email.
 No "Reply-To" header will be added to the email if no value is specified for
 the C<reply_to> parameter.
+
+=item add_headers
+
+  svnnotify --add-header X-Approve=letMeIn
+
+Add a header to the notification email message. The header name and its value
+must be separated by an equals sign. Specify the option multiple times in
+order to add multiple headers. Headers with the same names are allowed. Not to
+be confused with the C<--header> option, which adds introductory text to the
+beginning of the email body.
 
 =item subject_prefix
 
@@ -379,8 +393,9 @@ commit context is displayed in the subject and no part of the log message.
 
   svnnotify --header 'SVN::Notify is brought to you by Kineticode.
 
-Adds a specified text to each message as a header at the beginning of the
-body of the message.
+Adds a specified text to each message as a header at the beginning of the body
+of the message. Not to be confused with the C<--add-header> option, which adds
+a header to the headers section of the email.
 
 =item footer
 
@@ -588,7 +603,6 @@ sub new {
         $params{revision_url} .= '/revision/?rev=%s&view=rev'
     }
 
-
     # Make it so!
     $class->_dbpnt( "Instantiating $class object") if $params{verbose};
     return bless \%params, $class;
@@ -713,6 +727,9 @@ sub get_options {
         'smtp-user=s'         => \$opts->{smtp_user},
         'smtp-pass=s'         => \$opts->{smtp_pass},
         'smtp-authtype=s'     => \$opts->{smtp_authtype},
+        'add-header=s%'       => sub {
+            shift; push @{ $opts->{add_headers}{+shift} }, shift
+        },
         'revision-url|U|svnweb-url|S|viewcvs-url=s' => \$opts->{revision_url},
     ) or return;
 
@@ -1018,6 +1035,13 @@ sub prepare_subject {
       && length $self->{subject} > $self->{max_sub_length};
 
     $self->_dbpnt( qq{Subject is "$self->{subject}"}) if $self->{verbose};
+
+    # Q-Encoding (RFC 2047)
+    if (PERL58) {
+        require Encode;
+        Encode::from_to($self->{subject}, $self->{charset}, 'MIME-Q');
+    }
+
     return $self;
 }
 
@@ -1039,18 +1063,20 @@ sub execute {
     $self->_dbpnt( "Sending message") if $self->{verbose};
     return $self unless @{ $self->{to} };
 
-    my $out = $self->{smtp}
-        ? SVN::Notify::SMTP->get_handle($self)
-        : $self->_pipe(
+    my $out = $self->{smtp} ? SVN::Notify::SMTP->get_handle($self) : do {
+        local $ENV{LANG} = "$self->{language}.$self->{charset}"
+            if $self->{language};
+        $self->_pipe(
             '|-', $self->{sendmail}, '-oi', '-t',
             ($self->{set_sender} ? ('-f', $self->{from}) : ())
         );
+    };
 
     # Output the message.
     $self->output($out);
 
     close $out or warn "Child process exited: $?\n";
-    $self->_dbpnt( "Message sent") if $self->{verbose};
+    $self->_dbpnt( 'Message sent' ) if $self->{verbose};
     return $self;
 }
 
@@ -1141,6 +1167,12 @@ sub output_headers {
     print $out "Reply-To: $self->{reply_to}\n" if $self->{reply_to};
     print $out "X-Mailer: SVN::Notify ", $self->VERSION,
                ": http://search.cpan.org/dist/SVN-Notify/\n";
+
+    if (my $heads = $self->{add_headers}) {
+        while (my ($k, $v) = each %{ $heads }) {
+            print $out "$k: $_\n" for ref $v ? @{ $v } : $v;
+        }
+    }
 
     return $self;
 }
@@ -1500,6 +1532,7 @@ __PACKAGE__->_accessors(qw(
     svnlook
     sendmail
     set_sender
+    add_headers
     smtp
     charset
     io_layer
@@ -1693,6 +1726,21 @@ Gets or sets the value of the C<diff_switches> attribute.
 
 Gets or sets the value of the C<reply_to> attribute.
 
+=head3 add_headers
+
+  my $add_headers = $notifier->add_headers;
+  $notifier = $notifier->add_headers({
+      'X-Accept' => [qw(This That)],
+      'X-Reject' => 'Me!',
+  });
+
+Gets or sets the value of the C<add_headers> attribute, which is a hash
+reference of the headers to be added to the email message. If one header needs
+to appear multiple times, simply pass the corresponding hash value as an array
+reference of each value for the header. Not to be confused with the C<header>
+accessor, which gets and sets text to be included at the beginning of the body
+of the email message.
+
 =head3 subject_prefix
 
   my $subject_prefix = $notifier->subject_prefix;
@@ -1824,7 +1872,9 @@ C<prepare_files()>.
   my $header = $notifier->header;
   $notifier = $notifier->header($header);
 
-Gets or set the value of the C<header> attribute.
+Gets or set the value of the C<header> attribute. Not to be confused with the
+C<add_headers> attribute, which manages headers to be inserted into the
+notification email message headers.
 
 =head3 footer
 
@@ -1854,8 +1904,10 @@ sub _pipe {
             ? q{"}  . join(q{" "}, @_) . q{"|}
             : q{|"} . join(q{" "}, @_) . q{"};
         open PIPE, $cmd or die "Cannot fork: $!\n";
+        binmode PIPE, ":$self->{io_layer}" if PERL58;
         return *PIPE;
     }
+
     my $pid = open PIPE, $mode;
     die "Cannot fork: $!\n" unless defined $pid;
 

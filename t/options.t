@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 2916 2006-06-28 22:56:29Z theory $
+# $Id: options.t 3084 2006-08-01 02:13:02Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -14,6 +14,7 @@ my %testopts = (
     '--sendmail'       => 'sendmail',
     '--to'             => 'test@example.com',
     '--strip-cx-regex' => '^trunk',
+    '--add-header'     => 'foo=bar',
 );
 
 my %params = (
@@ -60,9 +61,11 @@ while (my ($k, $v) = each %testopts) {
     $params{$k} = $v;
 }
 $params{to} = [ $params{to} ];
+delete $params{add_header};
+$params{add_headers} = { foo => [qw(bar baz)] };
 
 # Make sure that the default options work.
-local @ARGV = %testopts;
+local @ARGV = (%testopts, '--add-header', 'foo=baz');
 ok my $opts = SVN::Notify->get_options, "Get SVN::Notify options";
 
 # Make sure that this is an array.
@@ -77,6 +80,11 @@ $params{css_url} = undef;
 
 # Use the --handler option to load the HTML subclass and make sure that
 # its options are properly parsed out of @ARGV.
-@ARGV = (%testopts, '--bugzilla-url' => 'url', '--handler' => 'HTML');
+@ARGV = (%testopts, '--bugzilla-url' => 'url', '--handler' => 'HTML', '--add-header', 'foo=baz');
 ok $opts = SVN::Notify->get_options, "Get SVN::Notify + HTML options";
 is_deeply($opts, \%params, "Check new results");
+
+BEGIN {
+    package HTML::Entities;
+    $INC{'HTML/Entities.pm'} = __FILE__;
+}
