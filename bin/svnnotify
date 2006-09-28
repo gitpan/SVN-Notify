@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: svnnotify 3084 2006-08-01 02:13:02Z theory $
+# $Id: svnnotify 3181 2006-09-25 19:53:56Z theory $
 
 use strict;
 use SVN::Notify;
@@ -71,7 +71,7 @@ Fake-out Pod::Usage
   -s --sendmail SENDMAIL       Location of the sendmail executable.
   -S --set-sender              Set the envelope sender to the from address.
      --smtp ADDRESS            Address for an SMTP server.
-     --stmp-user USERNAME      Username for authenticating to a SMTP server.
+     --smtp-user USERNAME      Username for authenticating to a SMTP server.
      --smtp-pass PASSWORD      Password for authenticating to a SMTP server.
      --smtp-authtype AUTHTYPE  Type of SMTP authentication.
   -c --charset CHARSET         The character set of the log message and the
@@ -100,8 +100,7 @@ Fake-out Pod::Usage
   -B --bugzilla-url URL        Include links to specified Bugzilla URL.
   -J --jira-url URL            Include links to specified JIRA URL.
   -G --gnats-url URL           Include links to specified Gnats URL.
-     --ticket-regex REGEX      Regex matching custom ticket identifiers.
-     --ticket-url URL          URL for linking to custom ticket identifers.
+     --ticket-map REGEX=URL    Regex and URL for custom ticket identifiers.
      --header HEADER           Text header to display before body.
      --footer FOOTER           Text footer to display at end of body.
   -V --verbose                 Incremental verbose mode.

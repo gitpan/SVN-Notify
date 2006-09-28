@@ -1,4 +1,4 @@
-SVN/Notify version 2.63
+SVN/Notify version 2.64
 =======================
 
 This class may be used for sending email messages for Subversion repository
@@ -33,13 +33,23 @@ SVN::Notify has the following dependencies:
         This module is included with Perl.
 
     * Pod::Usage
-        For calling "svnnotify" with the "--help" or "--man" options, or when
+        For calling 'svnnotify' with the --help or --man options, or when
         it fails to process the command-line options, usage output will be
         triggered by Pod::Usage, has been included with Perl since 5.6.0.
 
     * HTML::Entities
         This module is required for sending HTML-formatted notifications
         with SVN::Notify::HTML.
+
+    * Net::SMTP
+        This module is required for sending notification messages via SMTP
+        rather than by sendmail (e.g., under Windows). That is, it is required
+        when using the --smtp option.
+
+    * Net::SMTP_auth
+        This module is required for sending notifications messages via an
+        authenticating SMTP server, i.e., when using the --smtp-authtype
+        option.
 
 COPYRIGHT AND LICENCE
 

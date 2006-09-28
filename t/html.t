@@ -1,13 +1,13 @@
 #!perl -w
 
-# $Id: html.t 3085 2006-08-01 02:28:15Z theory $
+# $Id: html.t 3131 2006-09-12 02:57:02Z theory $
 
 use strict;
 use Test::More;
 use File::Spec::Functions;
 
 if (eval { require HTML::Entities }) {
-    plan tests => 201;
+    plan tests => 202;
 } else {
     plan skip_all => "SVN::Notify::HTML requires HTML::Entities";
 }
@@ -415,7 +415,10 @@ unlike($email,
      "Check for no Ticket 69 URL");
 like($email,
      qr{<a href="http://rt\.cpan\.org/NoAuth/Bugs\.html\?id=23">RT-Ticket: #23</a>},
-     "Check for Jesse RT URL");
+     "Check for Jesse's RT URL");
+like($email,
+     qr{<a href="http://rt\.cpan\.org/NoAuth/Bugs\.html\?id=45">RT #45</a>},
+     "Check for Ask's RT URL");
 
 # Check for ViewCVS URLs.
 like( $email,

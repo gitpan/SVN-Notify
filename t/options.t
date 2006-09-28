@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 3084 2006-08-01 02:13:02Z theory $
+# $Id: options.t 3181 2006-09-25 19:53:56Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -41,10 +41,7 @@ my %params = (
     handler         => undef,
     author_url      => undef,
     revision_url    => undef,
-    rt_url          => undef,
-    bugzilla_url    => undef,
-    gnats_url       => undef,
-    jira_url        => undef,
+    ticket_map      => undef,
     ticket_url      => undef,
     ticket_regex    => undef,
     verbose         => undef,
@@ -73,7 +70,7 @@ $params{strip_cx_regex} = ['^trunk'] if $Getopt::Long::VERSION >= 2.34;
 
 is_deeply($opts, \%params, "Check results");
 
-$params{bugzilla_url} = 'url';
+$params{ticket_url} = 'url';
 $params{handler} = 'HTML';
 $params{linkize} = undef;
 $params{css_url} = undef;
