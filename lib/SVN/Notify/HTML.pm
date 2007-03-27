@@ -1,17 +1,18 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 3181 2006-09-25 19:53:56Z theory $
+# $Id: HTML.pm 3288 2007-03-27 03:09:09Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.64';
+$SVN::Notify::HTML::VERSION = '2.65';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
-    linkize  => 'linkize',
-    css_url  => 'css-url=s',
+    linkize   => 'linkize',
+    css_url   => 'css-url=s',
+    wrap_log  => 'wrap-log',
 );
 
 =head1 Name
@@ -135,6 +136,15 @@ correctly extracts the ticket number for use in the URL.
 To learn more about the power of Regular expressions, I highly recommend
 _Mastering Regular Expressions, Second Edition_, by Jeffrey Friedl.
 
+=item wrap_log
+
+  svnnotify --wrap-log
+
+A boolean attribute to specify whether or not to wrap the log message in the
+output HTML. By default, log messages are I<not> wrapped, on the assumption
+that they should appear exactly as typed. But if that's not the case, specify
+this option to wrap the log message.
+
 =back
 
 =cut
@@ -228,9 +238,9 @@ sub output_css {
       qq(#msg dl a:visited { color:#cc6; }\n),
       q(h3 { font-family: verdana,arial,helvetica,sans-serif; ),
           qq(font-size: 10pt; font-weight: bold; }\n),
-      q(#msg pre { overflow: auto; background: #ffc; ),
+      q(#msg pre, #msg p { overflow: auto; background: #ffc; ),
           qq(border: 1px #fc0 solid; padding: 6px; }\n),
-      qq(#msg ul, pre { overflow: auto; }\n),
+      qq(#msg ul { overflow: auto; }\n),
       q(#header, #footer { color: #fff; background: #636; ),
       qq(border: 1px #300 solid; padding: 6px; }\n),
       qq(#patch { width: 100%; }\n);
@@ -324,15 +334,16 @@ sub output_log_message {
 
     # Make ticketing system links.
     if (my $map = $self->ticket_map) {
-        while (my ($regex, $url) = each %$map) {
-            $regex = $SVN::Notify::_ticket_regexen{$regex} || $regex;
+        $self->run_ticket_map ( sub {
+            my ($regex, $url) = @_;
             $url = encode_entities($url, '<>&"');
             $msg =~ s{$regex}{ sprintf qq{<a href="$url">$1</a>}, $2 || $1 }ige;
-        }
+        });
     }
 
     # Print it out and return.
-    print $out "<h3>Log Message</h3>\n<pre>$msg</pre>\n\n";
+    my $tag = $self->wrap_log ? 'p' : 'pre';
+    print $out "<h3>Log Message</h3>\n<$tag>$msg</$tag>\n\n";
     return $self;
 }
 
@@ -431,20 +442,28 @@ sub output_diff {
     $self->_dbpnt( "Outputting HTML diff") if $self->verbose > 1;
 
     print $out qq{</div>\n<div id="patch"><pre>\n};
-    my %seen;
+    my ($length, %seen) = 0;
+    my $max = $self->max_diff_length;
+
     while (<$diff>) {
-        s/[\n\r]+$//;
-        if (/^(Modified|Added|Deleted|Copied|Property changes on): (.*)/
-            && !$seen{$2}++)
-        {
-            my $action = $1;
-            my $file = encode_entities($2, '<>&"');
-            (my $id = $file) =~ s/[^\w_]//g;
-            print $out qq{<a id="$id">$action: $file</a>\n};
+        if (!$max || ($length += length) < $max) {
+            s/[\n\r]+$//;
+            if (/^(Modified|Added|Deleted|Copied|Property changes on): (.*)/
+                    && !$seen{$2}++) {
+                my $action = $1;
+                my $file = encode_entities($2, '<>&"');
+                (my $id = $file) =~ s/[^\w_]//g;
+                print $out qq{<a id="$id">$action: $file</a>\n};
+            }
+            else {
+                print $out encode_entities($_, '<>&"'), "\n";
+            }
+        } else {
+            print $out
+                "\n\@\@ Diff output truncated at $max characters. \@\@\n";
+            last;
         }
-        else {
-            print $out encode_entities($_, '<>&"'), "\n";
-        }
+
     }
     print $out "</pre></div>\n";
 
@@ -492,7 +511,7 @@ David Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2006 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2007 Kineticode, Inc. All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.

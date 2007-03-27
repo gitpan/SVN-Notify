@@ -1,9 +1,9 @@
 #!perl -w
 
-# $Id: base.t 3181 2006-09-25 19:53:56Z theory $
+# $Id: base.t 3289 2007-03-27 06:31:46Z theory $
 
 use strict;
-use Test::More tests => 213;
+use Test::More tests => 226;
 use File::Spec::Functions;
 
 use_ok('SVN::Notify');
@@ -38,6 +38,8 @@ is($notifier->revision, $args{revision}, "Check revision accessor" );
 is_deeply([$notifier->to], $args{to}, "Check to accessor" );
 is($notifier->to_regex_map, $args{to_regex_map},
    "Check to_regex_map accessor" );
+is($notifier->to_email_map, $args{to_email_map},
+   "Check to_email_map accessor" );
 is($notifier->from, 'theory', "Check from accessor" );
 is($notifier->user_domain, $args{user_domain},
    "Check user_domain accessor" );
@@ -226,7 +228,27 @@ like( $email,
       'Check regex_map To');
 
 ##############################################################################
-# Try reply_to.
+# Try to_email_map.
+##############################################################################
+my $email_map = {
+    'AccessorBuilder' => 'one@example.com',
+    '^/trunk',        => 'two@example.com',
+    '/branches'       => 'hone@example.com',
+};
+ok( $notifier = SVN::Notify->new(%args, to_email_map => $email_map),
+    "Construct new email_map notifier" );
+isa_ok($notifier, 'SVN::Notify');
+is_deeply $notifier->to_email_map, $email_map, 'email_map should be set';
+ok( $notifier->prepare, "Prepare to_email_map" );
+ok( $notifier->execute, "Notify to_email_map" );
+is keys %$email_map, 3, 'The email map hash should be unchanged';
+
+# Check the output.
+$email = get_output();
+like( $email,
+      qr/To: (test|one|two)\@example\.com, (test|one|two)\@example\.com, (test|one|two)\@example\.com\n/,
+      'Check email_map To');
+
 ##############################################################################
 ok( $notifier = SVN::Notify->new(%args, reply_to => 'me@example.com'),
     "Construct new reply_to notifier" );
@@ -241,7 +263,7 @@ like( $email, qr/Reply-To: me\@example\.com\n/, 'Check Reply-To Header');
 ##############################################################################
 # Try subject_prefix.
 ##############################################################################
-ok( $notifier = SVN::Notify->new(%args, subject_prefix => '[Commits]'),
+ok( $notifier = SVN::Notify->new(%args, subject_prefix => '[Commits] '),
     "Construct new subject_prefix notifier" );
 isa_ok($notifier, 'SVN::Notify');
 ok( $notifier->prepare, "Prepare subject_prefix" );
@@ -251,6 +273,20 @@ ok( $notifier->execute, "Notify subject_prefix" );
 $email = get_output();
 like( $email, qr/Subject: \[Commits\] \[111\] Did this, that, and the other\.\n/,
       "Check subject header for prefix" );
+
+##############################################################################
+# Try subject_prefix with %n.
+##############################################################################
+ok( $notifier = SVN::Notify->new(%args, subject_prefix => '[Commit r%d] '),
+    "Construct new subject_prefix with %d notifier" );
+isa_ok($notifier, 'SVN::Notify');
+ok( $notifier->prepare, "Prepare subject_prefix" );
+ok( $notifier->execute, "Notify subject_prefix" );
+
+# Check the output.
+$email = get_output();
+like( $email, qr/Subject: \[Commit r111\] Did this, that, and the other\.\n/,
+      "Check subject header for prefix with %d" );
 
 ##############################################################################
 # Try subject_cx.

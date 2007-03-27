@@ -1,10 +1,35 @@
 Revision history for Perl extension SVN::Notify
 
+2.65  2007-03-27T07:01:09
+      - Another patch from Martijn van Beers, this one generalizing the
+        execution of --ticket-map parageters (Ticket # 21633).
+      - Added note and link for HookStart for Windows users who run into
+        asynchronous execution issues. Reported by Eric Lemes.
+      - Added the --wrap-log option to SVN::Notify::HTML. When passed a true
+        value, the log message will be put into a `p` tag instead of a `pre`
+        tag, thus allowing it to wrap to the width of the mailer window.
+        Needless to say, this means that any whitespace formatting in the log
+        message itself will be lost. Suggested by Ian Anderson (Ticket
+        #24138).
+      - Restored checking for "%s" in the JIRA, RT, Butzilla, and GNATS
+        URLs. Reported by Matt Doar.
+      - Fixed some spelling errors, thanks to Matt Doar.
+      - Added not that verbose output goes to STDOUT.
+      - Added support for specifying the loation of the revision number via an
+        "%d" temlate in the --subject-prefix option. Patch from Jerry
+        Veldhuis (Ticket #24309).
+      - The --max-diff-length option now works properly in HTML output, as
+        well. Reported by Rob Moore (Ticket #25070)
+      - Added the --to-email-map option as the inverse of --to-regex-map. That
+        is, it maps regular expressions to email addresses, rather than the
+        other way around.
+
 2.64  2006-09-28T18:39:47
       - Added notes about Net::SMPT and Net::SMTP_auth to the README file.
         Reported by Nacho Barrientos Arias.
-      - The regular expresson for RT ticket numbers now also case-insnsitively
-        matches "RT" in addtion to "Ticket". Suggested by Ask Bjørn Hansen.
+      - The regular expresson for RT ticket numbers now also
+        case-insensitively matches "RT" in addtion to "Ticket". Suggested by
+        Ask Bjørn Hansen.
       - Now skipping all tests in 't/alt.t' if HTML::Entities is not
         installed. Reported by Marshall Roch.
       - Added a new option, '--ticket-map', to map regular expressions

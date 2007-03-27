@@ -1,12 +1,12 @@
 package SVN::Notify::HTML::ColorDiff;
 
-# $Id: ColorDiff.pm 3088 2006-08-02 18:12:13Z theory $
+# $Id: ColorDiff.pm 3281 2007-03-27 00:55:19Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify::HTML ();
 
-$SVN::Notify::HTML::ColorDiff::VERSION = '2.64';
+$SVN::Notify::HTML::ColorDiff::VERSION = '2.65';
 @SVN::Notify::HTML::ColorDiff::ISA = qw(SVN::Notify::HTML);
 
 =head1 Name
@@ -245,7 +245,7 @@ David Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2006 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2007 Kineticode, Inc. All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.

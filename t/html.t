@@ -1,13 +1,13 @@
 #!perl -w
 
-# $Id: html.t 3131 2006-09-12 02:57:02Z theory $
+# $Id: html.t 3288 2007-03-27 03:09:09Z theory $
 
 use strict;
 use Test::More;
 use File::Spec::Functions;
 
 if (eval { require HTML::Entities }) {
-    plan tests => 202;
+    plan tests => 220;
 } else {
     plan skip_all => "SVN::Notify::HTML requires HTML::Entities";
 }
@@ -42,6 +42,7 @@ is ($notifier->linkize, 1, "Check linkize" );
 is ($notifier->bugzilla_url, undef, "Check bugzilla_url" );
 is ($notifier->jira_url, undef, "Check jira_url" );
 is ($notifier->rt_url, undef, "Check rt_url" );
+ok !$notifier->wrap_log, 'wrap_log should be false';
 
 # Send the mesasge and get the output.
 ok( $notifier->execute, "HTML notify" );
@@ -232,6 +233,30 @@ is( scalar @{[$email =~ m{(--frank\n)}g]}, 2,
     'Check for two boundaries');
 is( scalar @{[$email =~ m{(--frank--)}g]}, 1,
     'Check for one final boundary');
+
+##############################################################################
+# Try max_diff_size
+##############################################################################
+ok $notifier = SVN::Notify::HTML->new(
+    %args,
+    max_diff_length => 1024,
+    with_diff       => 1,
+), 'Construct new max_diff_length notifier';
+
+isa_ok $notifier, 'SVN::Notify';
+isa_ok $notifier, 'SVN::Notify::HTML';
+is $notifier->max_diff_length, 1024, 'max_diff_hlength should be set';
+ok $notifier->with_diff, 'with_diff should be set';
+ok $notifier->prepare, 'Prepare max_diff_length checking';
+ok $notifier->execute, 'Notify max_diff_length checking';
+
+# Check the output.
+$email = get_output();
+like $email, qr{Use Apache::RequestRec for mod_perl 2},
+    'Check for the last diff line';
+unlike $email, qr{ BEGIN }, 'Check for missing extra line';
+like $email, qr{Diff output truncated at 1024 characters.},
+    'Check for truncation message';
 
 ##############################################################################
 # Try html format with a single file changed.
@@ -567,6 +592,24 @@ like $email, qr{<div id="header"><p>&laquo;Welcome!&raquo;</p></div>\n<dl>},
 like $email,
     qr{<div id="footer"><p>Copyright &reg; 2006</p></div>\s+</div>\s+</body>},
     'Check for the footer';
+
+##############################################################################
+# Try wrapping the log message.
+##############################################################################
+ok $notifier = SVN::Notify::HTML->new(
+    %args,
+    wrap_log => 1,
+), 'Constructe new HTML wrapped log notifier';
+isa_ok($notifier, 'SVN::Notify::HTML');
+isa_ok $notifier, 'SVN::Notify';
+ok $notifier->wrap_log, 'wrap_log should be true';
+ok $notifier->prepare, 'Prepare HTML header and footer checking';
+ok $notifier->execute, 'Notify HTML header and footer checking';
+
+# Check the output.
+$email = get_output();
+like( $email, qr{<p>Did this, that, and the other\. And then I did some more\. Some\nit was done on a second line\. “Go figure”\.</p>}, 'Check for HTML log in p tag message' );
+
 
 ##############################################################################
 # Functions.

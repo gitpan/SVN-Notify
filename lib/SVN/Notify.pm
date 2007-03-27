@@ -1,11 +1,11 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 3181 2006-09-25 19:53:56Z theory $
+# $Id: Notify.pm 3291 2007-03-27 06:47:18Z theory $
 
 use strict;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007;
-$SVN::Notify::VERSION = '2.64';
+$SVN::Notify::VERSION = '2.65';
 
 =begin comment
 
@@ -61,7 +61,7 @@ everything executes properly.
 
 =head2 Windows Usage
 
-Go get SVN::Notify to work properly in a F<post-commit> script, you must set
+To get SVN::Notify to work properly in a F<post-commit> script, you must set
 the following environment variables, as they will likley not be present inside
 Apache:
 
@@ -76,7 +76,10 @@ Apache:
 =back
 
 See L<http://svn.haxx.se/users/archive-2006-05/0593.shtml> for more detailed
-information on getting SVN::NOtify running on Windows.
+information on getting SVN::Notify running on Windows. If you have issues with
+asynchronous execution, try using F<HookStart.exe>
+(L<http://www.koders.com/csharp/fidE2724F44EF2D47F1C0FE76C538006435FA20051D.aspx>)
+to run F<svnnotify>.
 
 =cut
 
@@ -140,7 +143,7 @@ F<post-commit> for details. Required.
 
 The address or addresses to which to send the notification email. Can be used
 multiple times to specify multiple addresses. This parameter is required
-unless C<to_regex_map> is specified.
+unless either C<to_regex_map> or C<to_email_map> is specified.
 
 =item to_regex_map
 
@@ -154,13 +157,21 @@ only if the name of one or more of the directories affected by a commit
 matches the regular expression. This is a good way to have a notification
 email sent to a particular mail address (or comma-delimited list of addresses)
 only for certain parts of the subversion tree. This parameter is required
-unless C<to> is specified.
+unless C<to> or C<to_email_map> is specified.
 
 The command-line options, C<--to-regex_map> and C<-x>, can be specified any
 number of times, once for each entry in the hash to be passed to C<new()>. The
 value passed to the option must be in the form of the key and the value
 separated by an equal sign. Consult the L<Getopt::Long> documentation for more
 information.
+
+=item to_email_map
+
+  svnnotify --to-email-map L18N=translate@example.com \
+            --to-email-map License=legal@example.com
+
+The inverse of C<to_regex_map>: The regular expression is the hash key
+and the email address or addresses are the value.
 
 =item from
 
@@ -281,9 +292,10 @@ The Perl IO layer to use for inputting and outputting data. See
 L<perlio|perlio> for details. Defaults to "encoding($charset)". If your
 repository uses different character encodings, C<charset> should be set to
 whatever is the most common character encoding, and C<io_layer> is best set to
-C<raw>. In that case, some characters might not look right in the commit
-messaage (because an email can manage only one character encoding at a time),
-but then C<svnnotify> won't get stuck issuing a slew of warnings.
+C<raw>, e.g., C<--io-layer raw --charset cp850>. In that case, some characters
+might not look right in the commit messaage (because an email can manage only
+one character encoding at a time), but then C<svnnotify> won't get stuck
+issuing a slew of warnings.
 
 =item language
 
@@ -350,10 +362,12 @@ beginning of the email body.
 =item subject_prefix
 
   svnnotify --subject-prefix [Devlist]
-  svnnotify -P (Our-Developers)
+  svnnotify -P [%d (Our-Developers)]
 
 An optional string to prepend to the beginning of the subject line of the
-notification email.
+notification email. If it contains '%d', it will be used to place the revision
+number; otherwise it will simply be prepended to the subject, which will
+contain the revision number in brackets.
 
 =item subject_cx
 
@@ -507,11 +521,11 @@ Matches Bugzilla bug references of the form "Bug # 12" or "bug 6" or even
 
 =item jira
 
-Matches JIRA refrences of the form "JRA-1234".
+Matches JIRA references of the form "JRA-1234".
 
 =item gnats
 
-Matches GnatsWeb refrences of the form "PR 1234".
+Matches GnatsWeb references of the form "PR 1234".
 
 =back
 
@@ -567,7 +581,7 @@ default is 0, meaning that SVN::Notify will be silent. A value of 1 causes
 SVN::Notify to output some information about what it's doing, while 2 and 3
 each cause greater verbosity. To set the verbosity on the command line, simply
 pass the C<--verbose> or C<-V> option once for each level of verbosity, up to
-three times.
+three times. Output from SVN::Notify is sent to C<STDOUT>.
 
 =item boundary
 
@@ -613,8 +627,9 @@ sub new {
       unless $params{repos_path};
     die qq{Missing required "revision" parameter}
       unless $params{revision};
-    die qq{Missing required "to" or "to_regex_map" parameter}
-      unless @{ $params{to} } || $params{to_regex_map};
+    die qq{Missing required "to", "to_regex_map", or "to_email_map" parameter}
+        unless @{ $params{to} } || $params{to_regex_map}
+        || $params{to_email_map};
 
     # Set up default values.
     $params{svnlook}        ||= $ENV{SVNLOOK}  || $class->find_exe('svnlook');
@@ -645,7 +660,11 @@ sub new {
 
     for my $system (qw(rt bugzilla jira gnats)) {
         my $param = $system . '_url';
-        $track->{ $system } = delete $params{ $param } if $params{ $param };
+        if ($params{ $param }) {
+            $track->{ $system } = delete $params{ $param };
+            warn "--$system-url must have '%s' format\n"
+                unless $track->{ $system } =~ /%s/;
+        }
     }
     $params{ticket_map} = $track if $track;
 
@@ -737,6 +756,7 @@ sub get_options {
         'revision|r=s'        => \$opts->{revision},
         'to|t=s@'             => \$opts->{to},
         'to-regex-map|x=s%'   => \$opts->{to_regex_map},
+        'to-email-map=s%'     => \$opts->{to_email_map},
         'from|f=s'            => \$opts->{from},
         'user-domain|D=s'     => \$opts->{user_domain},
         'svnlook|l=s'         => \$opts->{svnlook},
@@ -861,8 +881,8 @@ for:
 
 Only it returns after the call to C<prepare_recipients()> if there are no
 recipients (that is, as when recipients are specified solely by the
-C<to_regex_map> parameter and none of the regular expressions match any of the
-affected directories).
+C<to_regex_map> or C<to_email_map> parameter and none of the regular
+expressions match any of the affected directories).
 
 =cut
 
@@ -884,8 +904,9 @@ sub prepare {
 Collects and prepares a list of the notification recipients. The recipients
 are a combination of the value passed to the C<to> parameter as well as any
 email addresses specified as keys in the hash reference passed C<to_regex_map>
-parameter, where the regular expressions stored in the values match one or
-more of the names of the directories affected by the commit.
+parameter or values passed to the C<to_email_map> parameter, where the
+corresponding regular expressions stored in the hash matches one or more of
+the names of the directories affected by the commit.
 
 If the F<subject_cx> parameter to C<new()> has a true value,
 C<prepare_recipients()> also determines the directory name to use for the
@@ -896,21 +917,28 @@ context.
 sub prepare_recipients {
     my $self = shift;
     $self->_dbpnt( "Preparing recipients list") if $self->{verbose};
-    return $self unless $self->{to_regex_map} || $self->{subject_cx};
-    my $tos = $self->{to};
-    my $regexen = $self->{to_regex_map};
+    return $self unless $self->{to_regex_map} || $self->{subject_cx}
+        || $self->{to_email_map};
+    # Prevent duplication.
+    my $tos = $self->{to} = [ @{ $self->{to} } ];
+
+    my $regexen = $self->{to_regex_map} && $self->{to_email_map}
+        ? [ %{ $self->{to_regex_map} }, reverse %{ $self->{to_email_map } } ]
+        : $self->{to_regex_map} ? [ %{ $self->{to_regex_map} } ]
+        : $self->{to_email_map} ? [ reverse %{ $self->{to_email_map } } ]
+        :                         undef;
+
     if ($regexen) {
-        $regexen = {%$regexen};
         $self->_dbpnt( "Compiling regex_map regular expressions")
-          if $self->{verbose} > 1;
-        for (values %$regexen) {
+            if $self->{verbose} > 1;
+        for (my $i = 1; $i < @$regexen; $i += 2) {
             $self->_dbpnt( qq{Compiling "$_"}) if $self->{verbose} > 2;
             # Remove initial slash and compile.
-            s|^\^[/\\]|^|;
-            $_ = qr/$_/;
+            $regexen->[$i] =~ s|^\^[/\\]|^|;
+            $regexen->[$i] = qr/$regexen->[$i]/;
         }
     } else {
-        $regexen = {};
+        $regexen = [];
     }
 
     my $cx;
@@ -918,14 +946,16 @@ sub prepare_recipients {
                           $self->{repos_path}, '-r', $self->{revision});
 
     # Read in a list of the directories changed.
+    my %seen;
     while (<$fh>) {
         s/[\n\r\/\\]+$//;
-        while (my ($email, $rx) = each %$regexen) {
+        for (my $i = 0; $i < @$regexen; $i += 2) {
+            my ($email, $rx) = @{$regexen}[$i, $i + 1];
             # If the directory matches the regex, save the email.
             if (/$rx/) {
                 $self->_dbpnt( qq{"$_" matched $rx}) if $self->{verbose} > 2;
-                push @$tos, $email;
-                delete $regexen->{$email};
+                push @$tos, $email unless $seen{$email}++;
+                splice @$regexen, $i, 2;
             }
         }
         # Grab the context if it's needed for the subject.
@@ -1051,9 +1081,16 @@ sub prepare_subject {
     $self->_dbpnt( "Preparing subject") if $self->{verbose};
 
     # Start with the optional message and revision number..
-    $self->{subject} .=
-      (defined $self->{subject_prefix} ?  "$self->{subject_prefix} " : '')
-      . "[$self->{revision}] ";
+    if ( defined $self->{subject_prefix} ) {
+        if ( index($self->{subject_prefix}, '%d') > 0 ) {
+            $self->{subject} .= sprintf
+                $self->{subject_prefix}, $self->{revision};
+        } else {
+            $self->{subject} .= $self->{subject_prefix} . "[$self->{revision}] ";
+        }
+    } else {
+        $self->{subject} .= "[$self->{revision}] ";
+    }
 
     # Add the context if there is one.
     if ($self->{cx}) {
@@ -1341,8 +1378,8 @@ sub output_log_message {
     # Make ticketing system links.
     if (my $map = $self->ticket_map) {
         my $has_header = 0;
-        while (my ($regex, $url) = each %$map) {
-            $regex = $_ticket_regexen{ $regex } || $regex;
+        $self->run_ticket_map( sub {
+            my ($regex, $url) = @_;
             while ($msg =~ /$regex/ig) {
                 unless ($has_header) {
                     print $out "\nTicket Links:\n:-----------\n";
@@ -1350,7 +1387,7 @@ sub output_log_message {
                 }
                 printf $out "    $url\n",  $2 || $1;
             }
-        }
+        } );
     }
 
     return $self;
@@ -1358,9 +1395,32 @@ sub output_log_message {
 
 ##############################################################################
 
+=head3 run_ticket_map
+
+  $notifier->run_ticket_map( \&callback, @params );
+
+Loops over the ticket systems you have defined, calling the C<$callback>
+function for each one, pasing to it the regex, url and @params specified as
+its parameters.
+
+=cut
+
+sub run_ticket_map {
+    my ($self, $callback, @params) = @_;
+
+    # Make ticketing system links.
+    my $map = $self->ticket_map or return;
+    my $has_header = 0;
+    while (my ($regex, $url) = each %$map) {
+        $regex = $_ticket_regexen{ $regex } || $regex;
+        $callback->( $regex, $url, @params );
+    }
+}
+##############################################################################
+
 =head3 output_file_lists
 
-  $notifier->output_log_message($file_handle);
+  $notifier->output_file_lists($file_handle);
 
 Outputs the lists of modified, added, and deleted files, as well as the list
 of files for which properties were changed. The labels used for each group are
@@ -1537,6 +1597,7 @@ __PACKAGE__->_accessors(qw(
     repos_path
     revision
     to_regex_map
+    to_email_map
     from
     user_domain
     svnlook
@@ -1658,6 +1719,14 @@ values for the C<to> attribute.
 
 Gets or sets the value of the C<to_regex_map> attribute, which is a hash
 reference of email addresses mapped to regular expressions.
+
+=head3 to_email_map
+
+  my $to_email_map = $notifier->to_email_map;
+  $notifier = $notifier->to_email_map($to_email_map);
+
+Gets or sets the value of the C<to_email_map> attribute, which is a hash
+reference of regular expressions mapped to email addresses.
 
 =head3 from
 
@@ -2055,7 +2124,7 @@ David Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2006 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2007 Kineticode, Inc. All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.

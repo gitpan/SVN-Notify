@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: svnnotify 3181 2006-09-25 19:53:56Z theory $
+# $Id: svnnotify 3285 2007-03-27 01:38:29Z theory $
 
 use strict;
 use SVN::Notify;
@@ -61,7 +61,7 @@ Fake-out Pod::Usage
   -t --to ADDRESS              The notification destination email address.
                                Required unless --to-regex-map.
   -x --to-regex-map TO=REGEX   A mapping between a destination email address
-                               and a regular expresion to match against the
+                               and a regular expression to match against the
                                directories affected by the commit. Required
                                unless --to.
   -f --from ADDRESS            Email address to use in the From header.
@@ -122,7 +122,7 @@ David Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2006 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2007 Kineticode, Inc. All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.

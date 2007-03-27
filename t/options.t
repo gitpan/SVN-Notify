@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 3181 2006-09-25 19:53:56Z theory $
+# $Id: options.t 3289 2007-03-27 06:31:46Z theory $
 
 use strict;
 use Test::More tests => 5;
@@ -24,6 +24,7 @@ my %params = (
     smtp_pass       => undef,
     smtp_authtype   => undef,
     to_regex_map    => undef,
+    to_email_map    => undef,
     from            => undef,
     user_domain     => undef,
     charset         => undef,
@@ -71,9 +72,10 @@ $params{strip_cx_regex} = ['^trunk'] if $Getopt::Long::VERSION >= 2.34;
 is_deeply($opts, \%params, "Check results");
 
 $params{ticket_url} = 'url';
-$params{handler} = 'HTML';
-$params{linkize} = undef;
-$params{css_url} = undef;
+$params{handler}  = 'HTML';
+$params{linkize}  = undef;
+$params{css_url}  = undef;
+$params{wrap_log} = undef;
 
 # Use the --handler option to load the HTML subclass and make sure that
 # its options are properly parsed out of @ARGV.
