@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 3288 2007-03-27 03:09:09Z theory $
+# $Id: HTML.pm 3294 2007-03-27 07:02:15Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.65';
+$SVN::Notify::HTML::VERSION = '2.66';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(

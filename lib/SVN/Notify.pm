@@ -1,11 +1,11 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 3291 2007-03-27 06:47:18Z theory $
+# $Id: Notify.pm 3301 2007-05-24 18:45:37Z theory $
 
 use strict;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007;
-$SVN::Notify::VERSION = '2.65';
+$SVN::Notify::VERSION = '2.66';
 
 =begin comment
 
@@ -164,6 +164,17 @@ number of times, once for each entry in the hash to be passed to C<new()>. The
 value passed to the option must be in the form of the key and the value
 separated by an equal sign. Consult the L<Getopt::Long> documentation for more
 information.
+
+Here's an example complements of Matt Doar of how to use C<to_regex_map> to do
+per-branch matching:
+
+  author=`svnlook author $REPOS -r $REV`
+
+  # The mail regexes should match all the top-level directories
+  /usr/bin/svnnotify --repos-path "$REPOS" --revision "$REV" \
+  -x eng-bar@example.com,${EXTRAS}="^Bar" \
+  -x eng-foo@example.com,${EXTRAS}="^trunk/Foo|^branches/Foo|^tags/Foo" \
+  -x $author@example.com="^users" --subject-cx
 
 =item to_email_map
 
@@ -488,8 +499,9 @@ Deprecated. Use C<revision_url> instead.
 
 =item ticket_map
 
-  svnnotify --ticket-map '\[?#\s*(\d+)\s*\]?=http://example.com/ticket?id=%s'
+  svnnotify --ticket-map '\[?#\s*(\d+)\s*\]?=http://example.com/ticket?id=%s' \
             --ticket-map 'rt=http://rt.cpan.org/NoAuth/Bugs.html?id=%s' \
+            --ticket-map '\b([A-Z]+-\d+)\b=http://jira/browse/%s'
 
 Specifies a mapping between a regular expression and a URL. The regular
 expression should return a single match to be interpolated into the URL, which
@@ -955,7 +967,6 @@ sub prepare_recipients {
             if (/$rx/) {
                 $self->_dbpnt( qq{"$_" matched $rx}) if $self->{verbose} > 2;
                 push @$tos, $email unless $seen{$email}++;
-                splice @$regexen, $i, 2;
             }
         }
         # Grab the context if it's needed for the subject.
@@ -2063,7 +2074,7 @@ sub get_handle {
     binmode tied(*{ $smtp->tied_fh }), ":$notifier->{io_layer}"
         if SVN::Notify::PERL58;
     $smtp->mail($notifier->{from});
-    $smtp->to(@{ $notifier->{to} });
+    $smtp->to(map { split /\s*,\s*/ } @{ $notifier->{to} });
     $smtp->data;
     tie local(*SMTP), $class, $smtp;
     return *SMTP;
