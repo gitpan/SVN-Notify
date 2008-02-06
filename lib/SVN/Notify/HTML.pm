@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 3294 2007-03-27 07:02:15Z theory $
+# $Id: HTML.pm 3385 2008-02-06 06:05:30Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.66';
+$SVN::Notify::HTML::VERSION = '2.67';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -342,8 +342,10 @@ sub output_log_message {
     }
 
     # Print it out and return.
-    my $tag = $self->wrap_log ? 'p' : 'pre';
-    print $out "<h3>Log Message</h3>\n<$tag>$msg</$tag>\n\n";
+    print $out "<h3>Log Message</h3>\n",
+        $self->wrap_log
+        ? ('<p>', join( "</p>\n\n<p>", split /\n\s*\n/, $msg ), "</p>\n\n")
+        : "<pre>$msg</pre>\n\n";
     return $self;
 }
 
@@ -511,7 +513,7 @@ David Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2007 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2008 Kineticode, Inc. All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.

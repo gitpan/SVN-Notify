@@ -1,11 +1,11 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 3301 2007-05-24 18:45:37Z theory $
+# $Id: Notify.pm 3385 2008-02-06 06:05:30Z theory $
 
 use strict;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007;
-$SVN::Notify::VERSION = '2.66';
+$SVN::Notify::VERSION = '2.67';
 
 =begin comment
 
@@ -974,7 +974,7 @@ sub prepare_recipients {
             # XXX Do we need to set utf8 here?
             my $l = length;
             $cx ||= $_;
-            $cx =~ s{[/\\]?[^/\\]+$}{} until !$cx || /^$cx/;
+            $cx =~ s{[/\\]?[^/\\]+$}{} until !$cx || m{^\Q$cx\E(?:$|/|\\)};
         }
     }
     $self->_dbpnt( qq{Context is "$cx"})
@@ -2135,7 +2135,7 @@ David Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2007 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2008 Kineticode, Inc. All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.

@@ -1,13 +1,13 @@
 #!perl -w
 
-# $Id: colordiff.t 726 2004-10-09 19:28:09Z theory $
+# $Id: htmlcolordiff.t 3383 2008-02-06 02:04:34Z theory $
 
 use strict;
 use Test::More;
 use File::Spec::Functions;
 
 if (eval { require HTML::Entities }) {
-    plan tests => 173;
+    plan tests => 191;
 } else {
     plan skip_all => "SVN::Notify::HTML::ColorDiff requires HTML::Entities";
 }
@@ -493,6 +493,54 @@ unlike( $email,
 like( $email,
       qr{<a href="http://ticket\.example\.com/id=54321">Custom # 54321</a>},
       "Check for custom ticket URL" );
+
+##############################################################################
+# Try max_diff_length
+#############################################################################
+ok $notifier = SVN::Notify::HTML::ColorDiff->new(
+    %args,
+    max_diff_length => 512,
+    with_diff       => 1,
+), 'Construct new max_diff_length notifier';
+
+isa_ok $notifier, 'SVN::Notify';
+isa_ok $notifier, 'SVN::Notify::HTML';
+is $notifier->max_diff_length, 512, 'max_diff_hlength should be set';
+ok $notifier->with_diff, 'with_diff should be set';
+ok $notifier->prepare, 'Prepare max_diff_length checking';
+ok $notifier->execute, 'Notify max_diff_length checking';
+
+# Check the output.
+$email = get_output();
+like $email, qr{Use Apache::RequestRec for mod_perl 2},
+    'Check for the last diff line';
+unlike $email, qr{ BEGIN }, 'Check for missing extra line';
+like $email, qr{Diff output truncated at 512 characters.},
+    'Check for truncation message';
+
+##############################################################################
+# Try wrapping the log message.
+##############################################################################
+ok $notifier = SVN::Notify::HTML::ColorDiff->new(
+    %args,
+    revision => 222,
+    wrap_log => 1,
+), 'Constructe new HTML wrapped log notifier';
+isa_ok($notifier, 'SVN::Notify::HTML::ColorDiff');
+isa_ok($notifier, 'SVN::Notify::HTML');
+isa_ok $notifier, 'SVN::Notify';
+ok $notifier->wrap_log, 'wrap_log should be true';
+ok $notifier->prepare, 'Prepare HTML header and footer checking';
+ok $notifier->execute, 'Notify HTML header and footer checking';
+
+# Check the output.
+$email = get_output();
+$email = get_output();
+like( $email,
+      qr{<p>Hey, we could add one for a Subversion Revision # 606, too!</p>
+
+<p>And finally, we have RT-Ticket: 123 for Jesse and RT # 445 for Ask\.</p>}
+);
 
 ##############################################################################
 # Functions.

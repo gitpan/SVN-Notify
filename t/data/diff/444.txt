@@ -44,7 +44,7 @@ Deleted: trunk/SVN-Notify/t/colordiff.t
 @@ -1,17 +0,0 @@
 -#!perl -w
 -
--# $Id$
+-# $Id: 444.txt 3373 2008-02-05 00:17:33Z theory $
 -
 -use strict;
 -use Test::More;
@@ -78,7 +78,7 @@ Added: trunk/SVN-Notify/t/options.t
 @@ -0,0 +1,59 @@
 +#!perl -w
 +
-+# $Id$
++# $Id: 444.txt 3373 2008-02-05 00:17:33Z theory $
 +
 +use strict;
 +use Test::More tests => 5;

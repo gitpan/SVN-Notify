@@ -1,5 +1,17 @@
 Revision history for Perl extension SVN::Notify
 
+2.67 2008-02-06T20:15:13
+      - Fixed bug where a directory with a valid regular expression character
+        could be incorrectly truncated. Patch from Wayne Davison.
+      - Fixed a bug where a directory name could be truncated too much if
+        there are directory names with common roots. Patch from Wayne Davison.
+      - Added the "configure_requires" parameter to Build.PL.
+      - Fixed SVN::Notify::HTML::ColorDiff so that it respects
+        --max-diff-length.
+      - The SVN::Notify::HTML --wrap-log option now wraps individual
+        paragraphs as identified by blank lines (with optional spaces), rather
+        than wrapping the entire message in a single set of paragraph tags.
+
 2.66  2007-06-17T05:08:29
       - Added some examples complements of Matt Doar.
       - Fixed the specification of recipients passed to the SMTP server so
