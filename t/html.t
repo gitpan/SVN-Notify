@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: html.t 3383 2008-02-06 02:04:34Z theory $
+# $Id: html.t 3476 2008-02-26 06:03:20Z theory $
 
 use strict;
 use Test::More;
@@ -28,6 +28,15 @@ my %args = (
     linkize    => 1,
 );
 
+my $subj = "Did this, that, and the «other».";
+my $qsubj;
+if (SVN::Notify::PERL58()) {
+    Encode::_utf8_on( $subj );
+    $qsubj = quotemeta Encode::encode( 'MIME-Q', $subj );
+} else {
+    $qsubj = quotemeta $subj;
+}
+
 ##############################################################################
 # Basic Functionality.
 ##############################################################################
@@ -49,8 +58,7 @@ ok( $notifier->execute, "HTML notify" );
 my $email = get_output();
 
 # Check the email headers.
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check HTML subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, 'Check HTML subject' );
 like( $email, qr/From: theory\n/, 'Check HTML From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML To');
 like( $email, qr{Content-Type: text/html; charset=UTF-8\n},
@@ -73,7 +81,7 @@ like( $email, qr|<meta http-equiv="content-type" content="text/html; charset=utf
       'There should be a meta http-equiv tag');
 like( $email, qr/<\/style>/, "Check for </style> tag" );
 like( $email,
-      qr/#msg dl { border: 1px #006 solid; background: #369; padding: 6px; color: #fff; }/,
+      qr/#msg dl.meta { border: 1px #006 solid; background: #369; padding: 6px; color: #fff; }/,
       "Check for style" );
 like( $email, qr/<div id="msg">/, "Check for msg div" );
 
@@ -91,7 +99,10 @@ like( $email,
       'Check Date');
 
 # Check that the log message is there.
-like( $email, qr{<pre>Did this, that, and the other\. And then I did some more\. Some\nit was done on a second line\. “Go figure”\.</pre>}, 'Check for HTML log message' );
+UTF8: {
+    use utf8;
+    like( $email, qr{<pre>Did this, that, and the «other»\. And then I did some more\. Some\nit was done on a second line\. “Go figure”\. r1234</pre>}, 'Check for HTML log message' );
+}
 
 # Make sure that Class/Meta.pm is listed twice, once for modification and once
 # for its attribute being set.
@@ -121,8 +132,7 @@ ok( $notifier->execute, "HTML notify" );
 $email = get_output();
 
 # Check the email headers.
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check HTML subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, 'Check HTML subject' );
 like( $email, qr/From: theory\n/, 'Check HTML From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML To');
 like( $email, qr{Content-Type: text/html; charset=UTF-8\n},
@@ -139,14 +149,16 @@ ok( $notifier = SVN::Notify::HTML->new(%args, with_diff => 1, language => 'en_US
     "Construct new HTML diff notifier" );
 isa_ok($notifier, 'SVN::Notify::HTML');
 isa_ok($notifier, 'SVN::Notify');
-ok( $notifier->prepare, "Single method call prepare" );
-ok( $notifier->execute, "HTML diff notify" );
+NO_BADLANG: {
+    local $ENV{PERL_BADLANG} = 0;
+    ok( $notifier->prepare, "Single method call prepare" );
+    ok( $notifier->execute, "HTML diff notify" );
+}
 
 # Get the output.
 $email = get_output();
 
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check HTML diff subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, 'Check HTML subject' );
 like( $email, qr/From: theory\n/, 'Check HTML diff From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML diff To');
 
@@ -201,7 +213,7 @@ ok( $notifier->execute, "Attach HTML attach diff notify" );
 # Get the output.
 $email = get_output();
 
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
+like( $email, qr/Subject: \[111\] $qsubj\n/,
       "Check HTML attach diff subject" );
 like( $email, qr/From: theory\n/, 'Check HTML attach diff From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML attach diff To');
@@ -298,14 +310,14 @@ like( $email,
       'Check for HTML URL');
 
 ##############################################################################
-# Try charset.
+# Try encoding.
 ##############################################################################
-ok( $notifier = SVN::Notify::HTML->new(%args, charset => 'ISO-8859-1'),
-    "Construct new charset notifier" );
+ok( $notifier = SVN::Notify::HTML->new(%args, encoding => 'ISO-8859-1'),
+    "Construct new encoding notifier" );
 isa_ok($notifier, 'SVN::Notify::HTML');
 isa_ok($notifier, 'SVN::Notify');
-ok( $notifier->prepare, "Prepare charset" );
-ok( $notifier->execute, "Notify charset" );
+ok( $notifier->prepare, "Prepare encoding" );
+ok( $notifier->execute, "Notify encoding" );
 
 # Check the output.
 $email = get_output();
@@ -561,7 +573,7 @@ ok $notifier->execute, 'Notify header and footer checking';
 
 # Check the output.
 $email = get_output();
-like $email, qr{<div id="header">This is the &amp;header</div>\n<dl>},
+like $email, qr{<div id="header">This is the &amp;header</div>\n<dl class="meta">},
       'Check for the header';
 
 like $email,
@@ -586,7 +598,7 @@ ok $notifier->execute, 'Notify HTML header and footer checking';
 
 # Check the output.
 $email = get_output();
-like $email, qr{<div id="header"><p>&laquo;Welcome!&raquo;</p></div>\n<dl>},
+like $email, qr{<div id="header"><p>&laquo;Welcome!&raquo;</p></div>\n<dl class="meta">},
       'Check for the header';
 
 like $email,
@@ -622,5 +634,6 @@ like( $email,
 sub get_output {
     my $outfile = catfile qw(t data output.txt);
     open CAP, "<$outfile" or die "Cannot open '$outfile': $!\n";
+    binmode CAP, 'utf8' if SVN::Notify::PERL58();
     return join '', <CAP>;
 }

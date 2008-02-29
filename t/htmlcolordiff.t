@@ -1,13 +1,13 @@
 #!perl -w
 
-# $Id: htmlcolordiff.t 3383 2008-02-06 02:04:34Z theory $
+# $Id: htmlcolordiff.t 3485 2008-02-26 19:01:08Z theory $
 
 use strict;
 use Test::More;
 use File::Spec::Functions;
 
 if (eval { require HTML::Entities }) {
-    plan tests => 191;
+    plan tests => 193;
 } else {
     plan skip_all => "SVN::Notify::HTML::ColorDiff requires HTML::Entities";
 }
@@ -27,6 +27,15 @@ my %args = (
     to         => 'test@example.com',
 );
 
+my $subj = "Did this, that, and the «other».";
+my $qsubj;
+if (SVN::Notify::PERL58()) {
+    Encode::_utf8_on( $subj );
+    $qsubj = quotemeta Encode::encode( 'MIME-Q', $subj );
+} else {
+    $qsubj = quotemeta $subj;
+}
+
 ##############################################################################
 # Basic Functionality.
 ##############################################################################
@@ -42,8 +51,7 @@ ok( $notifier->execute, "HTML notify" );
 my $email = get_output();
 
 # Check the email headers.
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check HTML subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, 'Check HTML subject' );
 like( $email, qr/From: theory\n/, 'Check HTML From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML To');
 like( $email, qr{Content-Type: text/html; charset=UTF-8\n},
@@ -80,7 +88,10 @@ like( $email,
       'Check Date');
 
 # Check that the log message is there.
-like( $email, qr{<pre>Did this, that, and the other\. And then I did some more\. Some\nit was done on a second line\. “Go figure”\.</pre>}, 'Check for HTML log message' );
+UTF8: {
+    use utf8;
+    like( $email, qr{<pre>Did this, that, and the «other»\. And then I did some more\. Some\nit was done on a second line\. “Go figure”\. r1234</pre>}, 'Check for HTML log message' );
+}
 
 # Make sure that Class/Meta.pm is listed twice, once for modification and once
 # for its attribute being set.
@@ -110,8 +121,7 @@ ok( $notifier->execute, "HTML notify" );
 $email = get_output();
 
 # Check the email headers.
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check HTML subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, 'Check HTML subject' );
 like( $email, qr/From: theory\n/, 'Check HTML From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML To');
 like( $email, qr{Content-Type: text/html; charset=UTF-8\n},
@@ -132,8 +142,7 @@ ok( $notifier->execute, "HTML diff notify" );
 # Get the output.
 $email = get_output();
 
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check HTML diff subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, 'Check HTML diff subject' );
 like( $email, qr/From: theory\n/, 'Check HTML diff From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML diff To');
 
@@ -212,8 +221,7 @@ ok( $notifier->execute, "Attach HTML attach diff notify" );
 # Get the output.
 $email = get_output();
 
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check HTML attach diff subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, 'Check HTML attach diff subject' );
 like( $email, qr/From: theory\n/, 'Check HTML attach diff From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML attach diff To');
 
@@ -300,16 +308,16 @@ like( $email,
       'Check for HTML URL');
 
 ##############################################################################
-# Try charset.
+# Try encoding.
 ##############################################################################
 ok( $notifier = SVN::Notify::HTML::ColorDiff->new(
     %args,
-    charset => 'ISO-8859-1'
-), "Construct new charset notifier" );
+    encoding => 'ISO-8859-1'
+), "Construct new encoding notifier" );
 isa_ok($notifier, 'SVN::Notify::HTML::ColorDiff');
 isa_ok($notifier, 'SVN::Notify');
-ok( $notifier->prepare, "Prepare charset" );
-ok( $notifier->execute, "Notify charset" );
+ok( $notifier->prepare, "Prepare encoding" );
+ok( $notifier->execute, "Notify encoding" );
 
 # Check the output.
 $email = get_output();
@@ -385,13 +393,64 @@ unlike($email,
        "Check for no rev 200 SVNWeb URL");
 
 ##############################################################################
+# Try max_diff_length
+#############################################################################
+ok $notifier = SVN::Notify::HTML::ColorDiff->new(
+    %args,
+    max_diff_length => 512,
+    with_diff       => 1,
+), 'Construct new max_diff_length notifier';
+
+isa_ok $notifier, 'SVN::Notify';
+isa_ok $notifier, 'SVN::Notify::HTML';
+is $notifier->max_diff_length, 512, 'max_diff_hlength should be set';
+ok $notifier->with_diff, 'with_diff should be set';
+ok $notifier->prepare, 'Prepare max_diff_length checking';
+ok $notifier->execute, 'Notify max_diff_length checking';
+
+# Check the output.
+$email = get_output();
+like $email, qr{Use Apache::RequestRec for mod_perl 2},
+    'Check for the last diff line';
+unlike $email, qr{ BEGIN }, 'Check for missing extra line';
+like $email, qr{Diff output truncated at 512 characters.},
+    'Check for truncation message';
+
+##############################################################################
+# Try wrapping the log message.
+##############################################################################
+ok $notifier = SVN::Notify::HTML::ColorDiff->new(
+    %args,
+    revision => 222,
+    wrap_log => 1,
+), 'Constructe new HTML wrapped log notifier';
+isa_ok($notifier, 'SVN::Notify::HTML::ColorDiff');
+isa_ok($notifier, 'SVN::Notify::HTML');
+isa_ok $notifier, 'SVN::Notify';
+ok $notifier->wrap_log, 'wrap_log should be true';
+ok $notifier->prepare, 'Prepare HTML header and footer checking';
+ok $notifier->execute, 'Notify HTML header and footer checking';
+
+# Check the output.
+$email = get_output();
+$email = get_output();
+like( $email,
+      qr{<p>Hey, we could add one for a Subversion Revision # 606, too!</p>
+
+<p>And finally, we have RT-Ticket: 123 for Jesse and RT # 445 for Ask\.</p>},
+      'The log message should be in paragraph tags'
+);
+
+##############################################################################
 # Major linkize and Bug tracking URLs, as well as complex diff.
 ##############################################################################
+my $year = 1900 + (localtime)[5];
 ok( $notifier = SVN::Notify::HTML::ColorDiff->new(
     %args,
     with_diff    => 1,
     revision     => 444,
     linkize      => 1,
+    wrap_log     => 1,
     viewcvs_url  => 'http://viewsvn.bricolage.cc/?rev=%s&view=rev',
     rt_url       => 'http://rt.cpan.org/NoAuth/Bugs.html?id=%s',
     bugzilla_url => 'http://bugzilla.mozilla.org/show_bug.cgi?id=%s',
@@ -400,7 +459,7 @@ ok( $notifier = SVN::Notify::HTML::ColorDiff->new(
     ticket_regex => '\[?\s*(Custom\s*#\s*(\d+))\s*\]?',
     header       => 'This commit is brought to you by Kineticode. '
                   . 'Setting knowledge in motion.',
-    footer       => '<span>Copyright &reg; Kineticode, Inc., 2004-2006. '
+    footer       => "<span>Copyright &reg; Kineticode, Inc., 2004-$year. "
                   . 'Some rights reserved.</span>',
 ),
     "Construct new complex notifier" );
@@ -410,9 +469,14 @@ ok( $notifier->prepare, "Prepare complex example" );
 ok( $notifier->execute, "Notify complex example" );
 
 $email = get_output();
+# Make sure multiple lines are paragraphs!
+like($email, qr{link\.</p>\n\n<p>We}, "Check for multiple paragraphs" );
 
-# Make sure multiple lines are still multiple!
-like($email, qr/link\.\n\nWe/, "Check for multiple lines" );
+# Make sure we have good unicode characters.
+UTF8: {
+    use utf8;
+    like $email, qr{“Unicode characters”}, 'We should have Unicode';
+}
 
 # Make sure that binary files in the diff are set up properly.
 like($email,
@@ -494,53 +558,7 @@ like( $email,
       qr{<a href="http://ticket\.example\.com/id=54321">Custom # 54321</a>},
       "Check for custom ticket URL" );
 
-##############################################################################
-# Try max_diff_length
-#############################################################################
-ok $notifier = SVN::Notify::HTML::ColorDiff->new(
-    %args,
-    max_diff_length => 512,
-    with_diff       => 1,
-), 'Construct new max_diff_length notifier';
-
-isa_ok $notifier, 'SVN::Notify';
-isa_ok $notifier, 'SVN::Notify::HTML';
-is $notifier->max_diff_length, 512, 'max_diff_hlength should be set';
-ok $notifier->with_diff, 'with_diff should be set';
-ok $notifier->prepare, 'Prepare max_diff_length checking';
-ok $notifier->execute, 'Notify max_diff_length checking';
-
-# Check the output.
-$email = get_output();
-like $email, qr{Use Apache::RequestRec for mod_perl 2},
-    'Check for the last diff line';
-unlike $email, qr{ BEGIN }, 'Check for missing extra line';
-like $email, qr{Diff output truncated at 512 characters.},
-    'Check for truncation message';
-
-##############################################################################
-# Try wrapping the log message.
-##############################################################################
-ok $notifier = SVN::Notify::HTML::ColorDiff->new(
-    %args,
-    revision => 222,
-    wrap_log => 1,
-), 'Constructe new HTML wrapped log notifier';
-isa_ok($notifier, 'SVN::Notify::HTML::ColorDiff');
-isa_ok($notifier, 'SVN::Notify::HTML');
-isa_ok $notifier, 'SVN::Notify';
-ok $notifier->wrap_log, 'wrap_log should be true';
-ok $notifier->prepare, 'Prepare HTML header and footer checking';
-ok $notifier->execute, 'Notify HTML header and footer checking';
-
-# Check the output.
-$email = get_output();
-$email = get_output();
-like( $email,
-      qr{<p>Hey, we could add one for a Subversion Revision # 606, too!</p>
-
-<p>And finally, we have RT-Ticket: 123 for Jesse and RT # 445 for Ask\.</p>}
-);
+unlike $email, qr{<p></p>}, 'There should be no empty paragraphs';
 
 ##############################################################################
 # Functions.
@@ -549,5 +567,6 @@ like( $email,
 sub get_output {
     my $outfile = catfile qw(t data output.txt);
     open CAP, "<$outfile" or die "Cannot open '$outfile': $!\n";
+    binmode CAP, 'utf8' if SVN::Notify::PERL58();
     return join '', <CAP>;
 }

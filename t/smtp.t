@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: smtp.t 3373 2008-02-05 00:17:33Z theory $
+# $Id: smtp.t 3479 2008-02-26 17:28:00Z theory $
 
 use strict;
 use Test::More tests => 36;
@@ -22,6 +22,17 @@ my %args = (
     to         => ['test@example.com', 'try@example.com'],
 );
 
+my $subj = "Did this, that, and the «other».";
+my $qsubj;
+if (SVN::Notify::PERL58()) {
+    Encode::_utf8_on( $subj );
+    $qsubj = quotemeta Encode::encode( 'MIME-Q', $subj );
+} else {
+    $qsubj = quotemeta $subj;
+}
+
+##############################################################################
+
 ok my $notifier = SVN::Notify->new(%args), 'Create new SMTP notifier';
 isa_ok $notifier, 'SVN::Notify', 'it';
 ok $notifier->prepare, 'Prepare notifier';
@@ -39,8 +50,7 @@ ok $smtp->{data}, 'data() should have been called';
 ok $smtp->{dataend}, 'dataend() should have been called';
 ok $smtp->{quit}, 'quit() should have been called';
 
-like $smtp->{datasend}, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check subject";
+like $smtp->{datasend}, qr/Subject: \[111\] $qsubj\n/, 'Check subject';
 like $smtp->{datasend}, qr/From: theory\n/, 'Check From';
 like $smtp->{datasend}, qr/To:\s+test\@example\.com,\s+try\@example\.com\n/,
     'Check To';
@@ -63,8 +73,8 @@ like $smtp->{datasend}, qr/Date:     2004-04-20 01:33:35 -0700 \(Tue, 20 Apr 200
 
 # Check that the log message is there.
 like $smtp->{datasend},
-    qr/Did this, that, and the other\. And then I did some more\. Some\nit was done on a second line\./,
-    'Check for log message';
+    qr/Did this, that, and the «other»\. And then I did some more\. Some\nit was done on a second line\./,
+    'Check for log message, which should be UTF-8, but not utf8.';
 
 ##############################################################################
 # Test authentication and Debug.

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: svnnotify 3385 2008-02-06 06:05:30Z theory $
+# $Id: svnnotify 3477 2008-02-26 06:05:39Z theory $
 
 use strict;
 use SVN::Notify;
@@ -74,9 +74,11 @@ Fake-out Pod::Usage
      --smtp-user USERNAME      Username for authenticating to a SMTP server.
      --smtp-pass PASSWORD      Password for authenticating to a SMTP server.
      --smtp-authtype AUTHTYPE  Type of SMTP authentication.
-  -c --charset CHARSET         The character set of the log message and the
-                               repository files.
-  -o --io-layer                Perl IO layer to use for input and output.
+  -c --encoding ENCODING       The character encoding for reading and writing
+                               data.
+     --svn-encoding ENCODING   The character encoding of the log message and
+                               the repository files.
+     --diff-encoding ENCODING  The character encoding of the repository files.
   -g --language LANGUAGE       Value for the Content-Language header and $LANG
                                environment variable.
   -d --with-diff               Include the diff in the message.
@@ -94,6 +96,7 @@ Fake-out Pod::Usage
   -i --max-sub-length LENGTH   Maximum size of the subject line.
   -e --max-diff-length LENGTH  Maximum size of the diff output.
   -H --handler HANDLER         The notification handler, such as "HTML".
+  -F --filter FILTER           An output filter, such as "Markdown".
   -A --author-url URL          Include link to specified author URL.
   -U --revision-url URL        Include links to specified Revision URL.
   -T --rt-url URL              Include links to specified Request Tracker URL.
@@ -109,22 +112,24 @@ Fake-out Pod::Usage
   -v --version                 Print the version number and exit.
 
 More options may be supported by the subclass of SVN::Notify specified by the
-C<--handler> option. Consult the documentation of the relevant subclass for
-details.
+C<--handler> option or by filters specified by the C<--filter> option. Consult
+the documentation of the relevant modules for details.
 
 =head1 See Also
 
-See L<SVN::Notify|SVN::Notify> for the complete documentation.
+See L<SVN::Notify|SVN::Notify> for the complete documentation. If you're
+having issues with character encodings, see especially the L<Character
+Encoding Support|SVN::Notify/"Chraracter Encoding Support"> section.
 
 =head1 Author
 
-David Wheeler <david@kineticode.com>
+David E. Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
 Copyright (c) 2004-2008 Kineticode, Inc. All Rights Reserved.
 
-This module is free software; you can redistribute it and/or modify it under the
-same terms as Perl itself.
+This module is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
 =cut

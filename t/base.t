@@ -1,9 +1,9 @@
 #!perl -w
 
-# $Id: base.t 3289 2007-03-27 06:31:46Z theory $
+# $Id: base.t 3476 2008-02-26 06:03:20Z theory $
 
 use strict;
-use Test::More tests => 226;
+use Test::More tests => 237;
 use File::Spec::Functions;
 
 use_ok('SVN::Notify');
@@ -21,6 +21,15 @@ my %args = (
     to         => ['test@example.com'],
 );
 
+my $subj = "Did this, that, and the «other».";
+my $qsubj;
+if (SVN::Notify::PERL58()) {
+    Encode::_utf8_on( $subj );
+    $qsubj = quotemeta Encode::encode( 'MIME-Q', $subj );
+} else {
+    $qsubj = quotemeta $subj;
+}
+
 ##############################################################################
 # Basic Functionality.
 ##############################################################################
@@ -31,7 +40,6 @@ ok( $notifier->prepare_recipients, 'prepare recipients' );
 ok( $notifier->prepare_contents, 'prepare contents' );
 ok( $notifier->prepare_files, 'prepare files');
 ok( $notifier->prepare_subject, 'prepare subject');
-
 # Make sure the attributes work.
 is($notifier->repos_path, $args{repos_path}, "Check repos_path accessor" );
 is($notifier->revision, $args{revision}, "Check revision accessor" );
@@ -45,9 +53,12 @@ is($notifier->user_domain, $args{user_domain},
    "Check user_domain accessor" );
 is($notifier->svnlook, $args{svnlook}, "Check svnlook accessor" );
 is($notifier->sendmail, $args{sendmail}, "Check sendmail accessor" );
-is($notifier->charset, 'UTF-8', "Check charset accessor" );
-is($notifier->io_layer, 'encoding(UTF-8)', 'Check IO layer');
+is($notifier->encoding, 'UTF-8', "Check encoding accessor" );
+is($notifier->svn_encoding, 'UTF-8', "Check svn_encoding accessor" );
+is($notifier->diff_encoding, 'UTF-8', "Check diff_encoding accessor" );
 is($notifier->language, undef, "Check language accessor" );
+is($notifier->env_lang, undef, "Check env_lang accessor" );
+is($notifier->svn_env_lang, undef, "Check svn_env_lang accessor" );
 is($notifier->with_diff, $args{with_diff}, "Check with_diff accessor" );
 is($notifier->attach_diff, $args{attach_diff}, "Check attach_diff accessor" );
 is($notifier->diff_switches, $args{diff_switches},
@@ -68,8 +79,7 @@ is($notifier->date, '2004-04-20 01:33:35 -0700 (Tue, 20 Apr 2004)',
 is($notifier->message_size, 103, "Check message_size accessor" );
 isa_ok($notifier->message, 'ARRAY', "Check message accessor" );
 isa_ok($notifier->files, 'HASH', "Check files accessor" );
-is($notifier->subject, '[111] Did this, that, and the other.',
-   "Check subject accessor" );
+is($notifier->subject, "[111] $subj", "Check subject accessor" );
 is($notifier->header, undef, 'Check header accessor');
 is($notifier->footer, undef, 'Check footer accessor');
 is($notifier->ticket_url, undef, 'Check ticket_url');
@@ -83,8 +93,7 @@ ok( $notifier->execute, "Notify" );
 my $email = get_output();
 
 # Check the email headers.
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, "Check subject" );
 like( $email, qr/From: theory\n/, 'Check From');
 like( $email, qr/Errors-To: theory\n/, 'Check Errors-To');
 like( $email, qr/To: test\@example\.com\n/, 'Check To');
@@ -106,7 +115,10 @@ like( $email, qr/Date:     2004-04-20 01:33:35 -0700 \(Tue, 20 Apr 2004\)\n/,
       'Check Date');
 
 # Check that the log message is there.
-like( $email, qr/Did this, that, and the other\. And then I did some more\. Some\nit was done on a second line\. “Go figure”\./, 'Check for log message' );
+UTF8: {
+    use utf8;
+    like( $email, qr/Did this, that, and the «other»\. And then I did some more\. Some\nit was done on a second line\. “Go figure”\./, 'Check for log message' );
+}
 
 # Make sure that Class/Meta.pm is listed twice, once for modification and once
 # for its attribute being set.
@@ -126,24 +138,27 @@ unlike( $email, qr{Modified: trunk/Params-CallbackRequest/Changes},
 ##############################################################################
 # Include diff and language.
 ##############################################################################
+local $ENV{LANG};
 ok( $notifier = SVN::Notify->new(
     %args,
     with_diff => 1,
     language  => 'en_US',
-    io_layer  => 'raw',
 ), 'Construct new diff notifier' );
 ok $notifier->with_diff, 'with_diff() should return true';
 is $notifier->language, 'en_US', 'language should be "en_US"';
-is $notifier->io_layer, 'raw', 'IO layer should be "raw"';
+is($notifier->env_lang, 'en_US.UTF-8', "Check env_lang accessor" );
+is($notifier->svn_env_lang, 'en_US.UTF-8', "Check svn_env_lang accessor" );
 isa_ok($notifier, 'SVN::Notify');
-ok( $notifier->prepare, "Single method call prepare" );
-ok( $notifier->execute, "Diff notify" );
+NO_BADLANG: {
+    local $ENV{PERL_BADLANG} = 0;
+    ok( $notifier->prepare, "Single method call prepare" );
+    ok( $notifier->execute, "Diff notify" );
+}
 
 # Get the output.
 $email = get_output();
 
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check diff subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, "Check diff subject" );
 like( $email, qr/From: theory\n/, 'Check diff From');
 like( $email, qr/To: test\@example\.com\n/, 'Check diff To');
 like( $email, qr/Content-Language: en_US\n/, 'Check diff Content-Language');
@@ -170,14 +185,16 @@ unlike( $email, qr{Content-Disposition: attachment; filename=},
 ok( $notifier = SVN::Notify->new(%args, attach_diff => 1, language => 'en_US'),
     "Construct new attach diff notifier" );
 isa_ok($notifier, 'SVN::Notify');
-ok( $notifier->prepare, "Single method call prepare" );
-ok( $notifier->execute, "Attach diff notify" );
+NO_BADLANG: {
+    local $ENV{PERL_BADLANG} = 0;
+    ok( $notifier->prepare, "Single method call prepare" );
+    ok( $notifier->execute, "Attach diff notify" );
+}
 
 # Get the output.
 $email = get_output();
 
-like( $email, qr/Subject: \[111\] Did this, that, and the other\.\n/,
-      "Check attach diff subject" );
+like( $email, qr/Subject: \[111\] $qsubj\n/, 'Check attach diff subject' );
 like( $email, qr/From: theory\n/, 'Check attach diff From');
 like( $email, qr/To: test\@example\.com\n/, 'Check attach diff To');
 
@@ -263,7 +280,7 @@ like( $email, qr/Reply-To: me\@example\.com\n/, 'Check Reply-To Header');
 ##############################################################################
 # Try subject_prefix.
 ##############################################################################
-ok( $notifier = SVN::Notify->new(%args, subject_prefix => '[Commits] '),
+ok( $notifier = SVN::Notify->new(%args, subject_prefix => '[C] '),
     "Construct new subject_prefix notifier" );
 isa_ok($notifier, 'SVN::Notify');
 ok( $notifier->prepare, "Prepare subject_prefix" );
@@ -271,8 +288,7 @@ ok( $notifier->execute, "Notify subject_prefix" );
 
 # Check the output.
 $email = get_output();
-like( $email, qr/Subject: \[Commits\] \[111\] Did this, that, and the other\.\n/,
-      "Check subject header for prefix" );
+like( $email, qr/Subject: \[C\] \[111\] $qsubj\n/, 'Check subject header for prefix' );
 
 ##############################################################################
 # Try subject_prefix with %n.
@@ -285,7 +301,7 @@ ok( $notifier->execute, "Notify subject_prefix" );
 
 # Check the output.
 $email = get_output();
-like( $email, qr/Subject: \[Commit r111\] Did this, that, and the other\.\n/,
+like( $email, qr/Subject: \[Commit r111\] $qsubj\n/,
       "Check subject header for prefix with %d" );
 
 ##############################################################################
@@ -299,7 +315,9 @@ ok( $notifier->execute, "Notify subject_cx" );
 
 # Check the output.
 $email = get_output();
-like( $email, qr{Subject: \[111\] trunk/Class-Meta: Did this, that, and the other\.\n},
+my $split_subj = $qsubj;
+($split_subj = $qsubj) =~ s/that\\,/that\\,\n / if SVN::Notify::PERL58();
+like( $email, qr{Subject: \[111\] trunk/Class-Meta: $split_subj\n},
       "Check subject header for CX" );
 
 ##############################################################################
@@ -392,18 +410,30 @@ like( $email, qr|Author:\s+theory\n\s+http://svn\.example\.com/~theory/\n|,
       'Check for author URL');
 
 ##############################################################################
-# Try charset.
+# Try encoding.
 ##############################################################################
-ok( $notifier = SVN::Notify->new(%args, charset => 'ISO-8859-1'),
-    "Construct new charset notifier" );
+ok( $notifier = SVN::Notify->new(%args, encoding => 'ISO-8859-1'),
+    "Construct new encoding notifier" );
 isa_ok($notifier, 'SVN::Notify');
-ok( $notifier->prepare, "Prepare charset" );
-ok( $notifier->execute, "Notify charset" );
+is( $notifier->encoding, 'ISO-8859-1', 'Check encoding');
+is( $notifier->svn_encoding, 'ISO-8859-1', 'Check encoding');
+is( $notifier->diff_encoding, 'ISO-8859-1', 'Check encoding');
+ok( $notifier->prepare, "Prepare encoding" );
+ok( $notifier->execute, "Notify encoding" );
 
 # Check the output.
 $email = get_output();
 like( $email, qr{Content-Type: text/plain; charset=ISO-8859-1\n},
       'Check Content-Type charset' );
+
+ok( $notifier = SVN::Notify->new(
+    %args,
+    svn_encoding => 'ISO-8859-1',
+    diff_encoding => 'US-ASCII',
+), 'Constrcut new multi-encoding notifier' );
+is( $notifier->encoding, 'UTF-8', 'Check encoding');
+is( $notifier->svn_encoding, 'ISO-8859-1', 'Check encoding');
+is( $notifier->diff_encoding, 'US-ASCII', 'Check encoding');
 
 ##############################################################################
 # Try Bug tracking URLs.
@@ -634,6 +664,7 @@ unlink "$look.exe" if SVN::Notify::WIN32();
 sub get_output {
     my $outfile = catfile qw(t data output.txt);
     open CAP, "<$outfile" or die "Cannot open '$outfile': $!\n";
+    binmode CAP, 'utf8' if SVN::Notify::PERL58();
     return join '', <CAP>;
 }
 

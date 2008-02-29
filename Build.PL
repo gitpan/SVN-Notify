@@ -5,10 +5,10 @@ use strict;
 my $class = Module::Build->subclass(
     class => 'My::Builder',
     code => q{
-             sub ACTION_build {
+             sub ACTION_code {
                  use File::Spec::Functions;
                  my $self = shift;
-                 $self->SUPER::ACTION_build(@_);
+                 $self->SUPER::ACTION_code(@_);
                  # Copy the test scripts and then set the shebang line and make
                  # sure that they're executable.
                  my @scripts;
@@ -37,7 +37,10 @@ my $build = $class->new(
     add_to_cleanup     => ['t/data/output.txt'],
     script_files       => ['bin/svnnotify'],
     configure_requires => { 'Module::Build' => '0.2701' },
-    requires           => { 'Getopt::Long' => '2.34' },
+    requires           => {
+        'Getopt::Long' => '2.34',
+        'perl'         => 5.006,
+    },
     build_requires     => {
         'Test::More'    => '0.17',
         'Module::Build' => '0.26',
@@ -51,6 +54,7 @@ my $build = $class->new(
         'Test::Pod'           => 1.20,
         'Test::Pod::Coverage' => 1.06,
         'File::Spec'          => 0,
+        'Text::Trac'          => '0.09',
     },
 );
 $build->create_build_script;

@@ -127,8 +127,7 @@ sub output {
     $self->output_headers($out);
 
     # Output the multipart/alternative header.
-    my $salt = join '', ('.', '/', 0..9, 'A'..'Z', 'a'..'z')[rand 64, rand 64];
-    my $bound = crypt $self->subject, $salt;
+    my $bound = join '', ('a'..'z', 'A'..'Z', 0..9)[ map { rand 62 } 0..10];
     print $out qq{Content-Type: multipart/alternative; boundary="$bound"\n},
                  "Content-Transfer-Encoding: 8bit\n\n";
 
@@ -185,13 +184,13 @@ __END__
 
 Jukka Zitting <jz@yukatan.fi>
 
-David Wheeler <david@kineticode.com>
+David E. Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
 Copyright (c) 2005-2008 Jukka Zitting and Kineticode, Inc. All Rights Reserved.
 
-This module is free software; you can redistribute it and/or modify it under the
-same terms as Perl itself.
+This module is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
 =cut

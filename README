@@ -1,4 +1,4 @@
-SVN/Notify version 2.67
+SVN/Notify version 2.70
 =======================
 
 This class may be used for sending email messages for Subversion repository
@@ -55,5 +55,5 @@ COPYRIGHT AND LICENCE
 
 Copyright (c) 2004-2008 Kineticode, Inc. All Rights Reserved.
 
-This module is free software; you can redistribute it and/or modify it under the
-same terms as Perl itself.
+This module is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.

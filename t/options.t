@@ -1,11 +1,11 @@
 #!perl -w
 
-# $Id: options.t 3289 2007-03-27 06:31:46Z theory $
+# $Id: options.t 3488 2008-02-27 21:32:17Z theory $
 
 use strict;
-use Test::More tests => 5;
+use Test::More tests => 11;
 
-BEGIN {use_ok 'SVN::Notify' };
+BEGIN { use_ok 'SVN::Notify' };
 
 my %testopts = (
     '--repos-path'     => 'foo',
@@ -27,8 +27,9 @@ my %params = (
     to_email_map    => undef,
     from            => undef,
     user_domain     => undef,
-    charset         => undef,
-    io_layer        => undef,
+    encoding        => undef,
+    svn_encoding    => undef,
+    diff_encoding   => undef,
     language        => undef,
     with_diff       => undef,
     attach_diff     => undef,
@@ -40,6 +41,7 @@ my %params = (
     max_sub_length  => undef,
     max_diff_length => undef,
     handler         => undef,
+    filters         => undef,
     author_url      => undef,
     revision_url    => undef,
     ticket_map      => undef,
@@ -82,6 +84,36 @@ $params{wrap_log} = undef;
 @ARGV = (%testopts, '--bugzilla-url' => 'url', '--handler' => 'HTML', '--add-header', 'foo=baz');
 ok $opts = SVN::Notify->get_options, "Get SVN::Notify + HTML options";
 is_deeply($opts, \%params, "Check new results");
+
+SKIP: {
+    eval 'require SVN::Notify::Filter::Trac';
+    skip 'Text::Trac did not load', 4 if $@;
+    local @ARGV = (%testopts, '--trac-url', 'http://trac.example.com/');
+    ok my $opts = SVN::Notify->get_options, "Get SVN::Notify options";
+    is $opts->{trac_url}, 'http://trac.example.com/', 'trac_url should be set';
+    ok my $notifier = SVN::Notify->new(%$opts), 'Construct SVN::Notify';
+    is $notifier->trac_url, 'http://trac.example.com/', 'trac_url attribute should be set';
+}
+
+# Test --to-regex-map.
+local @ARGV = (
+    %testopts,
+    '--to-regex-map', 'f@example.com=^this/',
+    '--to-regex-map', 'b@example.com=^that/',
+    '--to-regex-map', 'z@example.com=^that/',
+);
+
+ok $opts = SVN::Notify->get_options, "Get SVN::Notify + HTML options";
+delete $params{$_} for qw(linkize css_url wrap_log);
+$params{add_headers} = { foo => ['bar']};
+$params{handler} = $params{ticket_url} = undef;
+$params{to_regex_map} = {
+    'f@example.com' => '^this/',
+    'b@example.com' => '^that/',
+    'z@example.com' => '^that/',
+};
+
+is_deeply $opts, \%params, 'Should have to_regex_map hash';
 
 BEGIN {
     package HTML::Entities;

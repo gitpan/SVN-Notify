@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 3385 2008-02-06 06:05:30Z theory $
+# $Id: HTML.pm 3485 2008-02-26 19:01:08Z theory $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.67';
+$SVN::Notify::HTML::VERSION = '2.70';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -168,46 +168,86 @@ sub content_type { 'text/html' }
 
 =head2 Instance Methods
 
+=head3 start_html
+
+  $notifier->start_html($file_handle);
+
+This method starts the HTML of the notification message. It outputs the
+opening C<< <html> >>, C<< <head> >>, and C<< <body> >> tags. Note that if the
+C<language> attribute is set to a value, it will be specified in the
+ C<< <html> >> tag.
+
+All of the HTML will be passed to any "start_html" output filters. See
+L<Writing Output Filters|SVN::Notify/"Writing Output Filters"> for details on
+filters.
+
+=cut
+
+sub start_html {
+    my ($self, $out) = @_;
+    my $lang = $self->language;
+    my $char = lc $self->encoding;
+
+    my @html = (
+        qq{<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"\n},
+        qq{"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n},
+        qq{<html xmlns="http://www.w3.org/1999/xhtml"},
+        ($lang ? qq{ xml:lang="$lang"} : ()),
+        qq{>\n<head><meta http-equiv="content-type" content="text/html; },
+        qq{charset=$char" />\n},
+        ( $self->{css_url}
+              ? (
+                  '<link rel="stylesheet" type="text/css" href="',
+                  encode_entities($self->{css_url}),
+                  qq{" />\n}
+              ) : ()
+        ),
+        '<title>', encode_entities($self->subject, '<>&"'),
+        qq{</title>\n</head>\n<body>\n\n}
+    );
+
+    print $out @{ $self->run_filters( start_html => \@html ) };
+    return $self;
+}
+
+##############################################################################
+
 =head3 start_body
 
-  $notifier->start_body($file_handle);
-
-This method starts the body of the notification message. It outputs the
-opening C<< <html> >>, C<< <head> >>, C<< <style> >>, and C<< <body> >>
-tags. Note that if the C<language> attribute is set to a value, it will be
-specified in the C<< <html> >> tag.
+This method starts the body of the HTML notification message. It first calls
+C<start_html()>, and then outputs the C<< <style> >> tag, calling
+C<output_css()> between them. It then outputs an opening C<< <div> >> tag.
 
 If the C<header> attribute is set, C<start_body()> outputs it between
 C<< <div> >> tags with the ID "header". Furthermore, if the header happens to
 start with the character "E<lt>", C<start_body()> assumes that it contains
 valid HTML and therefore will not escape it.
 
+If a "start_body" output filter has been specified, it will be passed the
+lines with the C<< <div> >> tag and the header. To filter the CSS, use a "css"
+filter, and to filter the declaration of the HTML document and its C<< <head>
+>> section, use a "start_html" filter. See L<Writing Output
+Filters|SVN::Notify/"Writing Output Filters"> for details on filters.
+
 =cut
 
 sub start_body {
     my ($self, $out) = @_;
-    my $lang = $self->language;
-    my $char = lc $self->charset;
-
-    print $out qq{<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"\n},
-      qq{"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n},
-      qq{<html xmlns="http://www.w3.org/1999/xhtml"},
-      ($lang ? qq{ xml:lang="$lang"} : ()),
-      qq{>\n<head><meta http-equiv="content-type" content="text/html; },
-      qq{charset=$char" /><style type="text/css"><!--\n};
-    $self->output_css($out);
+    $self->start_html($out);
+    print $out qq{<style type="text/css"><!--\n};
+    $self->output_css( $out );
     print $out qq{--></style>\n};
-    print $out '<link rel="stylesheet" type="text/css" href="',
-           encode_entities($self->{css_url}),
-           qq{" />\n}
-       if $self->{css_url};
-    print $out '<title>', encode_entities($self->subject, '<>&"'),
-      qq{</title>\n</head>\n<body>\n\n<div id="msg">\n};
+
+    my @html = ( qq{<div id="msg">\n} );
     if (my $header = $self->header) {
-        print $out '<div id="header">',
+        push @html, (
+            '<div id="header">',
             ( $header =~ /^</  ? $header : encode_entities($header, '<>&"') ),
-            "</div>\n";
+            "</div>\n",
+        );
     }
+
+    print $out @{ $self->run_filters( start_body => \@html ) };
     return $self;
 }
 
@@ -221,29 +261,18 @@ This method starts outputs the CSS for the HTML message. It is called by
 C<start_body()>, and which wraps the output of C<output_css()> in the
 appropriate C<< <style> >> tags.
 
+An output filter named "css" may be added to modify the output of CSS. The
+filter subrutine name should be C<css> and expect an array reference of lines
+of CSS. See L<Writing Output Filters|SVN::Notify/"Writing Output Filters"> for
+details on filters.
+
 =cut
 
 sub output_css {
     my ($self, $out) = @_;
-    print $out
-      q(#msg dl { border: 1px #006 solid; background: #369; ),
-        qq(padding: 6px; color: #fff; }\n),
-      qq(#msg dt { float: left; width: 6em; font-weight: bold; }\n),
-      qq(#msg dt:after { content:':';}\n),
-      q(#msg dl, #msg dt, #msg ul, #msg li, #header, #footer { font-family: ),
-          qq(verdana,arial,helvetica,sans-serif; font-size: 10pt;  }\n),
-      qq(#msg dl a { font-weight: bold}\n),
-      qq(#msg dl a:link    { color:#fc3; }\n),
-      qq(#msg dl a:active  { color:#ff0; }\n),
-      qq(#msg dl a:visited { color:#cc6; }\n),
-      q(h3 { font-family: verdana,arial,helvetica,sans-serif; ),
-          qq(font-size: 10pt; font-weight: bold; }\n),
-      q(#msg pre, #msg p { overflow: auto; background: #ffc; ),
-          qq(border: 1px #fc0 solid; padding: 6px; }\n),
-      qq(#msg ul { overflow: auto; }\n),
-      q(#header, #footer { color: #fff; background: #636; ),
-      qq(border: 1px #300 solid; padding: 6px; }\n),
-      qq(#patch { width: 100%; }\n);
+    # We use _css() so that ColorDiff can override it and the filters then
+    # applied only one to all of the CSS.
+    print $out @{ $self->run_filters( css => $self->_css ) };
     return $self;
 }
 
@@ -258,11 +287,20 @@ including the revision number, author (user), and date of the revision. If the
 C<revision_url> attribute has been set, then the appropriate URL for the
 revision will be used to turn the revision number into a link.
 
+If there are any C<log_message> filters, this method will do no HTML
+formatting, but redispatch to
+L<SVN::Notify::output_metadata|SVN::Notify/"output_metadata">. See L<Writing
+Output Filters|SVN::Notify/"Writing Output Filters"> for details on filters.
+
 =cut
 
 sub output_metadata {
     my ($self, $out) = @_;
-    print $out "<dl>\n<dt>Revision</dt> <dd>";
+    if ( $self->filters_for('metadata') ) {
+        return $self->SUPER::output_metadata($out);
+    }
+
+    print $out qq{<dl class="meta">\n<dt>Revision</dt> <dd>};
 
     my $rev = $self->revision;
     if (my $url = $self->revision_url) {
@@ -285,9 +323,12 @@ sub output_metadata {
         print $out $user;
     }
 
-    print $out "</dd>\n",
-      "<dt>Date</dt> <dd>", encode_entities($self->date, '<>&"'), "</dd>\n",
-      "</dl>\n\n";
+    print $out (
+        "</dd>\n",
+        '<dt>Date</dt> <dd>',
+        encode_entities($self->date, '<>&"'), "</dd>\n",
+        "</dl>\n\n"
+    );
 
     return $self;
 }
@@ -302,6 +343,11 @@ Outputs the commit log message in C<< <pre> >> tags, and the label "Log
 Message" in C<< <h3> >> tags. If the C<bugzilla_url> attribute is set, then
 any strings like "Bug 2" or "bug # 567" will be turned into links.
 
+If there are any C<log_message> filters, the filters will be assumed to escape
+the HTML, linkize, and link ticket URLs. Otherwise, this method will do those
+things. See L<Writing Output Filters|SVN::Notify/"Writing Output Filters">
+for details on filters.
+
 =cut
 
 sub output_log_message {
@@ -309,43 +355,58 @@ sub output_log_message {
     $self->_dbpnt( "Outputting log message as HTML") if $self->verbose > 1;
 
     # Assemble the message.
-    my $msg = encode_entities(join("\n", @{$self->message}), '<>&"');
+    my $msg;
+    my $filters = $self->filters_for('log_message');
+    if ( $filters ) {
+        $msg = join(
+            "\n",
+            @{ $self->run_filters( log_message => [ @{ $self->message } ] ) }
+        );
+    } else {
+        $msg = encode_entities( join( "\n", @{ $self->message } ), '<>&"');
 
-    # Turn URLs and email addresses into links.
-    if ($self->linkize) {
-        # These regular expressions modified from "Mastering Regular
-        # Expressions" 2ed., pp 70-75.
+        # Turn URLs and email addresses into links.
+        if ($self->linkize) {
+            # These regular expressions modified from "Mastering Regular
+            # Expressions" 2ed., pp 70-75.
 
-        # Make email links.
-        $msg =~ s{\b(\w[-.\w]*\@[-a-z0-9]+(?:\.[-a-z0-9]+)*\.[-a-z0-9]+)\b}
-          {<a href="mailto:$1">$1</a>}gi;
+            # Make email links.
+            $msg =~ s{\b(\w[-.\w]*\@[-a-z0-9]+(?:\.[-a-z0-9]+)*\.[-a-z0-9]+)\b}
+                     {<a href="mailto:$1">$1</a>}gi;
 
-        # Make URLs linkable.
-        $msg =~ s{\b([a-z0-9]+://[-a-z0-9]+(?:\.[-a-z0-9]+)*\.[-a-z0-9]+\b(?:/(?:[-a-z0-9_:\@?=+,.!/~*I'%\$]|&amp;)*(?<![.,?!]))?)}
-          {<a href="$1">$1</a>}gi;
+            # Make URLs linkable.
+            $msg =~ s{\b([a-z0-9]+://[-a-z0-9]+(?:\.[-a-z0-9]+)*\.[-a-z0-9]+\b(?:/(?:[-a-z0-9_:\@?=+,.!/~*I'%\$]|&amp;)*(?<![.,?!]))?)}
+                     {<a href="$1">$1</a>}gi;
+        }
 
-    }
-
-    # Make Revision links.
-    if (my $url = $self->revision_url) {
-        $url = encode_entities($url, '<>&"');
-        $msg =~ s|\b(rev(?:ision)?\s*#?\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ige;
-    }
-
-    # Make ticketing system links.
-    if (my $map = $self->ticket_map) {
-        $self->run_ticket_map ( sub {
-            my ($regex, $url) = @_;
+        # Make Revision links.
+        if (my $url = $self->revision_url) {
             $url = encode_entities($url, '<>&"');
-            $msg =~ s{$regex}{ sprintf qq{<a href="$url">$1</a>}, $2 || $1 }ige;
-        });
+            $msg =~ s|\b(rev(?:ision)?\s*#?\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ige;
+        }
+
+        # Make ticketing system links.
+        if (my $map = $self->ticket_map) {
+            $self->run_ticket_map ( sub {
+                my ($regex, $url) = @_;
+                $url = encode_entities($url, '<>&"');
+                $msg =~ s{$regex}{ sprintf qq{<a href="$url">$1</a>}, $2 || $1 }ige;
+            });
+        }
     }
 
-    # Print it out and return.
-    print $out "<h3>Log Message</h3>\n",
-        $self->wrap_log
-        ? ('<p>', join( "</p>\n\n<p>", split /\n\s*\n/, $msg ), "</p>\n\n")
-        : "<pre>$msg</pre>\n\n";
+    print $out "<h3>Log Message</h3>\n";
+    if ($filters || $self->wrap_log) {
+        $msg = '<p>' . join( "</p>\n\n<p>", split /\n\s*\n/, $msg ) . '</p>'
+            if !$filters && $self->wrap_log;
+        print $out (
+            qq{<div id="logmsg">\n},
+            $msg,
+            qq{</div>\n\n},
+        )
+    } else {
+        print $out "<pre>$msg</pre>\n\n";
+    }
     return $self;
 }
 
@@ -360,11 +421,22 @@ files for which properties were changed as unordered lists. The labels used
 for each group are pulled in from the C<file_label_map()> class method and
 output in C<< <h3> >> tags.
 
+If there are any C<file_lists> filters, this method will do no HTML
+formatting, but redispatch to
+L<SVN::Notify::output_file_lists|SVN::Notify/"output_file_lists">. See
+L<Writing Output Filters|SVN::Notify/"Writing Output Filters"> for details on
+filters.
+
 =cut
 
 sub output_file_lists {
     my ($self, $out) = @_;
     my $files = $self->files or return $self;
+
+    if ( $self->filters_for('file_lists') ) {
+        return $self->SUPER::output_file_lists($out);
+    }
+
     my $map = $self->file_label_map;
     # Create the lines that will go underneath the above in the message.
     my %dash = ( map { $_ => '-' x length($map->{$_}) } keys %$map );
@@ -388,8 +460,8 @@ sub output_file_lists {
                 }
             }
         } else {
-            print $out "  <li>" . encode_entities($_, '<>&"') . "</li>\n"
-              for @{ $files->{$type} };
+            print $out "  <li>", encode_entities($_, '<>&"'), "</li>\n"
+                for @{ $files->{$type} };
         }
         print $out "</ul>\n\n";
     }
@@ -410,18 +482,26 @@ C<< <div> >> tags with the ID "footer". Furthermore, if the footer happens to
 end with the character "E<lt>", C<end_body()> assumes that it contains valid
 HTML and therefore will not escape it.
 
+All of the HTML will be passed to any "end_body" output filters. See L<Writing
+Output Filters|SVN::Notify/"Writing Output Filters"> for details on filters.
+
 =cut
 
 sub end_body {
     my ($self, $out) = @_;
     $self->_dbpnt( "Ending body") if $self->verbose > 2;
+    my @html;
     if (my $footer = $self->footer) {
-        print $out '<div id="footer">',
+        push @html, (
+            '<div id="footer">',
             ( $footer =~ /^</  ? $footer : encode_entities($footer, '<>&"') ),
-            "</div>\n";
+            "</div>\n",
+        );
     }
-    print $out "\n</div>" unless $self->with_diff && !$self->attach_diff;
-    print $out "\n</body>\n</html>\n";
+    push @html, "\n</div>" unless $self->with_diff && !$self->attach_diff;
+    push @html, "\n</body>\n</html>\n";
+
+    print $out @{ $self->run_filters( end_body => \@html ) };
     return $self;
 }
 
@@ -437,10 +517,19 @@ Each line of the diff file is escaped by C<HTML::Entities::encode_entities()>.
 The diff data will be read from C<$diff_file_handle> and printed to
 C<$out_file_handle>.
 
+If there are any C<diff> filters, this method will do no HTML formatting, but
+redispatch to L<SVN::Notify::output_diff|SVN::Notify/"output_diff">. See
+L<Writing Output Filters|SVN::Notify/"Writing Output Filters"> for details on
+filters.
+
 =cut
 
 sub output_diff {
     my ($self, $out, $diff) = @_;
+    if ( $self->filters_for('diff') ) {
+        return $self->SUPER::output_diff($out, $diff);
+    }
+
     $self->_dbpnt( "Outputting HTML diff") if $self->verbose > 1;
 
     print $out qq{</div>\n<div id="patch"><pre>\n};
@@ -458,7 +547,7 @@ sub output_diff {
                 print $out qq{<a id="$id">$action: $file</a>\n};
             }
             else {
-                print $out encode_entities($_, '<>&"'), "\n";
+                print $out ( encode_entities($_, '<>&"'), "\n" );
             }
         } else {
             print $out
@@ -496,6 +585,49 @@ Gets or sets the value of the C<css_url> attribute.
 
 =cut
 
+##############################################################################
+
+sub _css {
+    return [
+        q(#msg dl.meta { border: 1px #006 solid; background: #369; ),
+            qq(padding: 6px; color: #fff; }\n),
+        qq(#msg dl.meta dt { float: left; width: 6em; font-weight: bold; }\n),
+        qq(#msg dt:after { content:':';}\n),
+        q(#msg dl, #msg dt, #msg ul, #msg li, #header, #footer, #logmsg { font-family: ),
+            qq(verdana,arial,helvetica,sans-serif; font-size: 10pt;  }\n),
+        qq(#msg dl a { font-weight: bold}\n),
+        qq(#msg dl a:link    { color:#fc3; }\n),
+        qq(#msg dl a:active  { color:#ff0; }\n),
+        qq(#msg dl a:visited { color:#cc6; }\n),
+        q(h3 { font-family: verdana,arial,helvetica,sans-serif; ),
+            qq(font-size: 10pt; font-weight: bold; }\n),
+        q(#msg pre { overflow: auto; background: #ffc; ),
+            qq(border: 1px #fa0 solid; padding: 6px; }\n),
+        qq(#logmsg { background: #ffc; border: 1px #fa0 solid; padding: 1em 1em 0 1em; }\n),
+        qq(#logmsg p, #logmsg pre, #logmsg blockquote { margin: 0 0 1em 0; }\n),
+        qq(#logmsg p, #logmsg li, #logmsg dt, #logmsg dd { line-height: 14pt; }\n),
+        qq(#logmsg h1, #logmsg h2, #logmsg h3, #logmsg h4, #logmsg h5, #logmsg h6 { margin: .5em 0; }\n),
+        qq(#logmsg h1:first-child, #logmsg h2:first-child, #logmsg h3:first-child, #logmsg h4:first-child, #logmsg h5:first-child, #logmsg h6:first-child { margin-top: 0; }\n),
+        qq(#logmsg ul, #logmsg ol { padding: 0; list-style-position: inside; margin: 0 0 0 1em; }\n),
+        qq(#logmsg > ul, #logmsg > ol { margin-left: 0; margin: 0 0 1em 0; }\n),
+        qq(#logmsg pre { background: #eee; padding: 1em; }\n),
+        qq(#logmsg blockquote { border: 1px solid #fa0; border-left-width: 10px; padding: 1em 1em 0 1em; background: white;}\n),
+        qq(#logmsg dl { margin: 0; }\n),
+        qq(#logmsg dt { font-weight: bold; }\n),
+        qq(#logmsg dd { margin: 0; padding: 0 0 0.5em 0; }\n),
+        qq(#logmsg dd:before { content:'\\00bb';}\n),
+        qq(#logmsg table { border-spacing: 0px; border-collapse: collapse; border-top: 4px solid #fa0; border-bottom: 1px solid #fa0; background: #fff; }\n),
+        qq(#logmsg table th { text-align: left; font-weight: normal; padding: 0.2em 0.5em; border-top: 1px dotted #fa0; }\n),
+        qq(#logmsg table td { text-align: right; border-top: 1px dotted #fa0; padding: 0.2em 0.5em; }\n),
+        qq(#logmsg table thead th { text-align: center; border-bottom: 1px solid #fa0; }\n),
+        qq(#logmsg table th.Corner { text-align: left; }\n),
+        qq(#logmsg hr { border: none 0; border-top: 2px dashed #fa0; height: 1px; }\n),
+        q(#header, #footer { color: #fff; background: #636; ),
+        qq(border: 1px #300 solid; padding: 6px; }\n),
+        qq(#patch { width: 100%; }\n),
+    ];
+}
+
 1;
 __END__
 
@@ -509,13 +641,13 @@ __END__
 
 =head1 Author
 
-David Wheeler <david@kineticode.com>
+David E. Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
 Copyright (c) 2004-2008 Kineticode, Inc. All Rights Reserved.
 
-This module is free software; you can redistribute it and/or modify it under the
-same terms as Perl itself.
+This module is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
 =cut
