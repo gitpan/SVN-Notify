@@ -1,10 +1,12 @@
 package SVN::Notify::Filter::Trac;
 
-# $Id: Trac.pm 3493 2008-02-28 20:50:32Z theory $
+# $Id: Trac.pm 3588 2008-04-02 05:03:44Z david $
 
 use strict;
 use Text::Trac;
 use SVN::Notify;
+
+$SVN::Notify::Filter::Trac::VERSION = '2.71';
 
 =begin comment
 
@@ -57,8 +59,8 @@ SVN::Notify::Filter::Trac - Filter SVN::Notify output in Trac format
 
 Use F<svnnotify> in F<post-commit>:
 
-  svnnotify --p "$1" --r "$2" --handler HTML --filter Trac \
-  --trac-url http://trac.example.com
+  svnnotify --p "$1" --r "$2" --to you@example.com --handler HTML \
+  --filter Trac --trac-url http://trac.example.com
 
 Use the class in a custom script:
 
@@ -67,8 +69,9 @@ Use the class in a custom script:
   my $notifier = SVN::Notify->new(
       repos_path => $path,
       revision   => $rev,
+      to         => 'you@example.com',
       handler    => 'HTML::ColorDiff',
-      filter     => [ 'Trac' ],
+      filters    => [ 'Trac' ],
       trac_url   => 'http://trac.example.com/',
   );
   $notifier->prepare;

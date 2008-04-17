@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: options.t 3488 2008-02-27 21:32:17Z theory $
+# $Id: options.t 3651 2008-04-17 18:50:30Z david $
 
 use strict;
 use Test::More tests => 11;
@@ -86,9 +86,11 @@ ok $opts = SVN::Notify->get_options, "Get SVN::Notify + HTML options";
 is_deeply($opts, \%params, "Check new results");
 
 SKIP: {
-    eval 'require SVN::Notify::Filter::Trac';
+    # Use the --filter option to load the Trac filter and make sure that its
+    # options are properly parsed out of @ARGV.
+    eval 'require Text::Trac';
     skip 'Text::Trac did not load', 4 if $@;
-    local @ARGV = (%testopts, '--trac-url', 'http://trac.example.com/');
+    local @ARGV = (%testopts, '--filter', 'Trac', '--trac-url', 'http://trac.example.com/');
     ok my $opts = SVN::Notify->get_options, "Get SVN::Notify options";
     is $opts->{trac_url}, 'http://trac.example.com/', 'trac_url should be set';
     ok my $notifier = SVN::Notify->new(%$opts), 'Construct SVN::Notify';

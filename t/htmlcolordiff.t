@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: htmlcolordiff.t 3485 2008-02-26 19:01:08Z theory $
+# $Id: htmlcolordiff.t 3485 2008-02-26 19:01:08Z david $
 
 use strict;
 use Test::More;

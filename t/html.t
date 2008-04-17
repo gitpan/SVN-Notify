@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: html.t 3476 2008-02-26 06:03:20Z theory $
+# $Id: html.t 3476 2008-02-26 06:03:20Z david $
 
 use strict;
 use Test::More;

@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: alt.t 3444 2008-02-20 00:20:50Z theory $
+# $Id: alt.t 3444 2008-02-20 00:20:50Z david $
 
 use strict;
 use Test::More;

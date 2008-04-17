@@ -1,13 +1,13 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 3494 2008-02-28 23:43:26Z theory $
+# $Id: Notify.pm 3651 2008-04-17 18:50:30Z david $
 
 use strict;
 require 5.006;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.70';
+$SVN::Notify::VERSION = '2.71';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -498,11 +498,15 @@ differently.
 
   svnnotify --filter Trac -F My::Filter
 
-  SVN::Notify->new( %params, filters => ['Trac', 'My::Filter'] );
+  SVN::Notify->new( %params, filters => ['Markdown', 'My::Filter'] );
 
 Specify a more module to be loaded in the expectation that it defines output
 filters. For example, L<SVN::Notify::Filter::Trac|SVN::Notify::Filter::Trac>
 loads a filter that converts log messages from Trac's markup format to HTML.
+L<SVN::Notify::Filter::Markdown|SVN::Notify::Filter::Markdown>, available on
+CPAN, does the same for Markdown format. Check CPAN for other SVN::Notify
+filter modules.
+
 This command-line option can be specified more than once to load multiple
 filters. The C<filters> parameter to C<new()> should be an array reference of
 modules names. If a value contains "::", it is assumed to be a complete module
@@ -898,6 +902,14 @@ sub get_options {
     # Load a subclass if one has been specified.
     if ($opts->{handler}) {
         eval "require " . __PACKAGE__ . "::$opts->{handler}" or die $@;
+    }
+
+    # Load any filters.
+    if ($opts->{filters}) {
+        for my $pkg ( @{ $opts->{filters} } ) {
+            $pkg = "SVN::Notify::Filter::$pkg" if $pkg !~ /::/;
+            eval "require $pkg" or die $@;
+        }
     }
 
     # Load any options for the subclass.
@@ -2430,9 +2442,9 @@ Tutorial for installing Apache, Subversion, and SVN::Notify on Windows.
 
 This module is stored in an open repository at the following address:
 
-  L<https://svn.kineticode.com/SVN-Notify/trunk/>
+L<https://svn.kineticode.com/SVN-Notify/trunk/>
 
-Patches against SVN are welcome. Please send bug reports to
+Patches against SVN::Notify are welcome. Please send bug reports to
 <bug-svn-notify@rt.cpan.org>.
 
 =head1 Author

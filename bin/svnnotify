@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: svnnotify 3477 2008-02-26 06:05:39Z theory $
+# $Id: svnnotify 3477 2008-02-26 06:05:39Z david $
 
 use strict;
 use SVN::Notify;

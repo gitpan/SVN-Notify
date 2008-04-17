@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 3485 2008-02-26 19:01:08Z theory $
+# $Id: HTML.pm 3585 2008-04-02 04:57:29Z david $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.70';
+$SVN::Notify::HTML::VERSION = '2.71';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -355,44 +355,41 @@ sub output_log_message {
     $self->_dbpnt( "Outputting log message as HTML") if $self->verbose > 1;
 
     # Assemble the message.
-    my $msg;
     my $filters = $self->filters_for('log_message');
-    if ( $filters ) {
-        $msg = join(
+
+    my $msg = $filters
+        ?  join(
             "\n",
             @{ $self->run_filters( log_message => [ @{ $self->message } ] ) }
-        );
-    } else {
-        $msg = encode_entities( join( "\n", @{ $self->message } ), '<>&"');
+        ) :  encode_entities( join( "\n", @{ $self->message } ), '<>&"');
 
-        # Turn URLs and email addresses into links.
-        if ($self->linkize) {
-            # These regular expressions modified from "Mastering Regular
-            # Expressions" 2ed., pp 70-75.
+    # Turn URLs and email addresses into links.
+    if ($self->linkize) {
+        # These regular expressions modified from "Mastering Regular
+        # Expressions" 2ed., pp 70-75.
 
-            # Make email links.
-            $msg =~ s{\b(\w[-.\w]*\@[-a-z0-9]+(?:\.[-a-z0-9]+)*\.[-a-z0-9]+)\b}
-                     {<a href="mailto:$1">$1</a>}gi;
+        # Make email links.
+        $msg =~ s{\b(\w[-.\w]*\@[-a-z0-9]+(?:\.[-a-z0-9]+)*\.[-a-z0-9]+)\b}
+                 {<a href="mailto:$1">$1</a>}gi;
 
             # Make URLs linkable.
-            $msg =~ s{\b([a-z0-9]+://[-a-z0-9]+(?:\.[-a-z0-9]+)*\.[-a-z0-9]+\b(?:/(?:[-a-z0-9_:\@?=+,.!/~*I'%\$]|&amp;)*(?<![.,?!]))?)}
-                     {<a href="$1">$1</a>}gi;
-        }
+        $msg =~ s{\b([a-z0-9]+://[-a-z0-9]+(?:\.[-a-z0-9]+)*\.[-a-z0-9]+\b(?:/(?:[-a-z0-9_:\@?=+,.!/~*I'%\$]|&amp;)*(?<![.,?!]))?)}
+                 {<a href="$1">$1</a>}gi;
+    }
 
-        # Make Revision links.
-        if (my $url = $self->revision_url) {
+    # Make Revision links.
+    if (my $url = $self->revision_url) {
+        $url = encode_entities($url, '<>&"');
+        $msg =~ s|\b(rev(?:ision)?\s*#?\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ige;
+    }
+
+    # Make ticketing system links.
+    if (my $map = $self->ticket_map) {
+        $self->run_ticket_map ( sub {
+            my ($regex, $url) = @_;
             $url = encode_entities($url, '<>&"');
-            $msg =~ s|\b(rev(?:ision)?\s*#?\s*(\d+))\b|sprintf qq{<a href="$url">$1</a>}, $2|ige;
-        }
-
-        # Make ticketing system links.
-        if (my $map = $self->ticket_map) {
-            $self->run_ticket_map ( sub {
-                my ($regex, $url) = @_;
-                $url = encode_entities($url, '<>&"');
-                $msg =~ s{$regex}{ sprintf qq{<a href="$url">$1</a>}, $2 || $1 }ige;
-            });
-        }
+            $msg =~ s{$regex}{ sprintf qq{<a href="$url">$1</a>}, $2 || $1 }ige;
+        });
     }
 
     print $out "<h3>Log Message</h3>\n";

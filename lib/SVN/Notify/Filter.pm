@@ -1,4 +1,4 @@
-# $Id: Filter.pm 3456 2008-02-22 18:02:59Z theory $
+# $Id: Filter.pm 3595 2008-04-02 05:33:13Z david $
 
 =head1 Name
 
@@ -130,9 +130,12 @@ First, see the L<"Synopsis"> for an example that converts Textile-formatted
 log messages to HTML, and L<"A Quick Example"> for a filter that converts a
 Markdown-formatted log message to HTML. If you format your log messages for
 Trac, just use the included
-L<SVN::Notify::Filter::Trac|SVN::Notify::Filter::Trac> filter.
+L<SVN::Notify::Filter::Trac|SVN::Notify::Filter::Trac> filter. There is
+also L<SVN::Notify::Filter::Markdown|SVN::Notify::Filter::Markdown> on CPAN,
+and maybe other filters as well.
 
-Otherwise, here are some examples to get you started writing your own filters:
+But if you can't find anything that does what you want, here are some examples
+to get you started writing your own filters:
 
 =over
 
@@ -213,9 +216,10 @@ able to do much.
 
 Log message filtering will probably be quite common, generally to reformat it
 (see, for example, the included
-L<SVN::Notify::Filter::Trac|SVN::Notify::Filter::Trac> filter). If the
-Markdown and Textile examples above are more than you need, here's a simple
-filter that reformats the log message so that paragraphs are wrapped.
+L<SVN::Notify::Filter::Trac|SVN::Notify::Filter::Trac> filter, as well as
+L<SVN::Notify::Filter::Markdown|SVN::Notify::Filter::Markdown> on CPAN). If
+the Markdown and Textile examples above are more than you need, here's a
+simple filter that reformats the log message so that paragraphs are wrapped.
 
   package SVN::Notify::Filter::WrapMessage;
   use Text::Wrap ();
@@ -340,10 +344,12 @@ So by all means write your filters for SVN::Notify. If you've think you've got
 a really good one, or a filter that others will find useful, please B<do not
 send it to me.> A better option is to package it up and put it on the CPAN. Go
 ahead! Take an example from this document, if you want, put it in a module,
-write a few tests, and upload the distribution. Let's create a mini-ecosystem
-of SVN::Notify filters, all available via CPAN. That way, lots of people can
-take advantage of them, new "features" can be added on a regular basis, and I
-don't have to keep adding cruft to SVN::Notify itself!
+write a few tests, and upload the distribution. Model your distribution on
+L<SVN::Notify::Filter::Markdown|SVN::Notify::Filter::Markdown>, which is
+already separately distributed on CPAN. Let's create a mini-ecosystem of
+SVN::Notify filters, all available via CPAN. That way, lots of people can take
+advantage of them, new "features" can be added on a regular basis, and I don't
+have to keep adding cruft to SVN::Notify itself!
 
 =head1 See Also
 
@@ -351,9 +357,25 @@ don't have to keep adding cruft to SVN::Notify itself!
 
 =item L<SVN::Notify|SVN::Notify>
 
+The class that makes this stuff all work.
+
 =item L<SVN::Notify::HTML|SVN::Notify::HTML>
 
+The SVN::Notify class that likely will be most often used when filtering
+messages. Check its documentation for variasions on filter handling from
+SVN::Notify.
+
 =item L<SVN::Notify::Filter::Trac|SVN::Notify::Filter::Trac>
+
+Filters log messages to convert them from Trac wiki format to HTML. Also
+demonstrates the ability to add attributes to SVN::Notify (and options to
+F<svnnotify> for added functionality of the filter.
+
+=item L<SVN::Notify::Filter::Markdown|SVN::Notify::Filter::Markdown>
+
+A separate CPAN distribution that filters log messages to convert them from
+Markdown format to HTML. Check it out to get an idea how to create your own
+filter distributions on CPAN.
 
 =back
 
