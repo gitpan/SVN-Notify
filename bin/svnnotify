@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: svnnotify 3477 2008-02-26 06:05:39Z david $
+# $Id: svnnotify 3668 2008-04-25 15:31:20Z david $
 
 use strict;
 use SVN::Notify;
@@ -69,7 +69,7 @@ Fake-out Pod::Usage
                                complete the email address in the From header.
   -l --svnlook SVNLOOK         Location of the svnlook executable.
   -s --sendmail SENDMAIL       Location of the sendmail executable.
-  -S --set-sender              Set the envelope sender to the from address.
+  -E --set-sender              Set the envelope sender to the from address.
      --smtp ADDRESS            Address for an SMTP server.
      --smtp-user USERNAME      Username for authenticating to a SMTP server.
      --smtp-pass PASSWORD      Password for authenticating to a SMTP server.

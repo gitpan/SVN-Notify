@@ -1,13 +1,13 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 3651 2008-04-17 18:50:30Z david $
+# $Id: Notify.pm 3672 2008-04-25 23:17:44Z david $
 
 use strict;
-require 5.006;
+require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
-use constant PERL58 => $] > 5.007;
+use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.71';
+$SVN::Notify::VERSION = '2.72';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -999,11 +999,14 @@ expressions match any of the affected directories).
 
 sub prepare {
     my $self = shift;
+    $self->run_filters('pre_prepare');
     $self->prepare_recipients;
     return $self unless @{ $self->{to} };
     $self->prepare_contents;
     $self->prepare_files;
     $self->prepare_subject;
+    $self->run_filters('post_prepare');
+    return $self;
 }
 
 ##############################################################################
@@ -1273,6 +1276,7 @@ any other actions in response to Subversion activity.
 sub execute {
     my $self = shift;
     $self->_dbpnt( "Sending message") if $self->{verbose};
+    $self->run_filters('pre_execute');
     return $self unless @{ $self->{to} };
 
     my $out = $self->{smtp} ? SVN::Notify::SMTP->get_handle($self) : do {
@@ -1290,6 +1294,7 @@ sub execute {
 
     close $out or warn "Child process exited: $?\n";
     $self->_dbpnt( 'Message sent' ) if $self->{verbose};
+    $self->run_filters('post_execute');
     return $self;
 }
 
@@ -2224,8 +2229,7 @@ sub _pipe {
             ? q{"}  . join(q{" "}, @_) . q{"|}
             : q{|"} . join(q{" "}, @_) . q{"};
         open PIPE, $cmd or die "Cannot fork: $!\n";
-        binmode PIPE, ":encoding($encode)"
-            if PERL58 && $encode && lc($encode) ne 'utf-8';
+        binmode PIPE, ":encoding($encode)" if PERL58 && $encode;
         return *PIPE;
     }
 

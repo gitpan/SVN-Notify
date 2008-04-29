@@ -1,5 +1,19 @@
 Revision history for Perl extension SVN::Notify
 
+2.72  2008-04-29T17:17:29
+      - Fixed misdocumentation of the short version of the --set-sender option
+        in C<svnnotify --help>: it's -E, not -S. Reported by Larry Shatzer,
+        Jr.
+      - Fixed encoding issue on Windows. Patch to fix a stupid oversight
+        graciously provided by David Golden.
+      - Added four new filter callbacks, "pre_prepare", "post_prepare",
+        "pre_execute", and "post_execute". These are called at the begining
+        and end of the execution of the prepare() and execute() methods.
+        Suggestion and initial patch from Larry Shatzer.
+      - Reorganized the table listing the types of filters in
+        SVN::Notify::Filter so that they are listed in the order in which they
+        execute.
+
 2.71  2008-04-17T18:53:27
       - Fixed test failure in t/filter.t when HTML::Entities is not installed.
         Reported by David Cantrell via CPAN-Testers.
@@ -17,8 +31,6 @@ Revision history for Perl extension SVN::Notify
         and processing the command-line arguments when the filter was loaded
         by the --filter option to `svnnotify`. Thanks to Larry Shatzer, Jr.
         for the spot!
-      - A character encoding test added in 2.70 still fails on Windows. No
-        idea why. Seeking help from a Windows developer to help chase it down.
 
 2.70  2008-02-29T17:03:26
       - See http://justatheory.com/computers/programming/perl/modules/svnnotify-2.70.html
