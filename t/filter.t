@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: filter.t 3672 2008-04-25 23:17:44Z david $
+# $Id: filter.t 3743 2008-05-04 00:23:59Z david $
 
 use strict;
 use Test::More tests => 135;
@@ -415,10 +415,17 @@ ok( $notifier = SVN::Notify->new(
 isa_ok($notifier, 'SVN::Notify');
 ok $notifier->prepare, 'Prepare callback filter checking';
 ok $notifier->execute, 'Notify callback filter checking';
-{
+
+if (SVN::Notify::PERL58()) {
+    # Newer Perls should read this as utf8.
     use utf8;
     is $notifier->subject,
-       'prep [111] Did this, that, and the «other». postp pree poste',
+        'prep [111] Did this, that, and the «other». postp pree poste',
+        'The subject should have been modified';
+} else {
+    # Perl 5.6 has to read this as bytes.
+    is $notifier->subject,
+        'prep [111] Did this, that, and the «other». postp pree poste',
         'The subject should have been modified';
 }
 
