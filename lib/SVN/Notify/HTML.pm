@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 3677 2008-04-29 17:17:58Z david $
+# $Id: HTML.pm 3865 2008-05-09 19:25:53Z david $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.73';
+$SVN::Notify::HTML::VERSION = '2.74';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -99,8 +99,8 @@ override the default settings. This approach nicely takes advantage of the
 This attribute is inherited from L<SVN::Notify|SVN::Notify>, but its semantics
 are slightly different: the regular expression passed as the regular
 expression used for the key should return I<two> matches instead of one: the
-text to linkify and the ticket ID itself. For example, '(BUG-(\d+))' will
-match "BUG-1234567", and "BUG-1234567" will be used for the link text, while
+text to link and the ticket ID itself. For example, '(BUG-(\d+))' will match
+"BUG-1234567", and "BUG-1234567" will be used for the link text, while
 "1234567" will be used to fill in the C<ticket_url> format string. The first
 set of parentheses capture the whole string, while the parentheses around
 C<\d+> match the number only. Also note that it is wise to use "\b" on either
@@ -262,7 +262,7 @@ C<start_body()>, and which wraps the output of C<output_css()> in the
 appropriate C<< <style> >> tags.
 
 An output filter named "css" may be added to modify the output of CSS. The
-filter subrutine name should be C<css> and expect an array reference of lines
+filter subroutine name should be C<css> and expect an array reference of lines
 of CSS. See L<Writing Output Filters|SVN::Notify/"Writing Output Filters"> for
 details on filters.
 
@@ -282,7 +282,7 @@ sub output_css {
 
   $notifier->output_metadata($file_handle);
 
-This method outputs a definition list containting the metadata of the commit,
+This method outputs a definition list containing the meta data of the commit,
 including the revision number, author (user), and date of the revision. If the
 C<revision_url> attribute has been set, then the appropriate URL for the
 revision will be used to turn the revision number into a link.
@@ -344,9 +344,9 @@ Message" in C<< <h3> >> tags. If the C<bugzilla_url> attribute is set, then
 any strings like "Bug 2" or "bug # 567" will be turned into links.
 
 If there are any C<log_message> filters, the filters will be assumed to escape
-the HTML, linkize, and link ticket URLs. Otherwise, this method will do those
-things. See L<Writing Output Filters|SVN::Notify/"Writing Output Filters">
-for details on filters.
+the HTML, create inline links, and link ticket URLs. Otherwise, this method
+will do those things. See L<Writing Output Filters|SVN::Notify/"Writing Output
+Filters"> for details on filters.
 
 =cut
 
@@ -605,8 +605,10 @@ sub _css {
         qq(#logmsg p, #logmsg li, #logmsg dt, #logmsg dd { line-height: 14pt; }\n),
         qq(#logmsg h1, #logmsg h2, #logmsg h3, #logmsg h4, #logmsg h5, #logmsg h6 { margin: .5em 0; }\n),
         qq(#logmsg h1:first-child, #logmsg h2:first-child, #logmsg h3:first-child, #logmsg h4:first-child, #logmsg h5:first-child, #logmsg h6:first-child { margin-top: 0; }\n),
-        qq(#logmsg ul, #logmsg ol { padding: 0; list-style-position: inside; margin: 0 0 0 1em; }\n),
-        qq(#logmsg > ul, #logmsg > ol { margin-left: 0; margin: 0 0 1em 0; }\n),
+        qq{#logmsg ul, #logmsg ol { padding: 0; list-style-position: inside; margin: 0 0 0 1em; }\n},
+        qq{#logmsg ul { text-indent: -1em; padding-left: 1em; }},
+        qq{#logmsg ol { text-indent: -1.5em; padding-left: 1.5em; }\n},
+        qq(#logmsg > ul, #logmsg > ol { margin: 0 0 1em 0; }\n),
         qq(#logmsg pre { background: #eee; padding: 1em; }\n),
         qq(#logmsg blockquote { border: 1px solid #fa0; border-left-width: 10px; padding: 1em 1em 0 1em; background: white;}\n),
         qq(#logmsg dl { margin: 0; }\n),
@@ -642,7 +644,7 @@ David E. Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2008 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2008 Kineticode, Inc. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.

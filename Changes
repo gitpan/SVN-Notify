@@ -1,5 +1,16 @@
 Revision history for Perl extension SVN::Notify
 
+2.74  2008-05-15T03:29:11
+      - Updated copyright.
+      - Changed the list example in the Trac sample output to use Greeking so
+        that the indentation of wrapping lines can be seen in the output.
+      - Improved the CSS for lists in the log message output by
+        SVN::notify::HTML (and subclasses) so that bullets are properly
+        hangling indents.
+      - Removed a bit of redundant CSS from SVN::Notify::HTML.
+      - Added a spelling test. This has the benefit of reducing the number of
+        annoying spelling errors in the documentation.
+
 2.73  2008-05-04T02:02:21
       - Fixed another lame-ass test failure under Perl 5.6.2. Reported by
         David Cantrell via cpan-testers.

@@ -1,12 +1,12 @@
 package SVN::Notify::HTML::ColorDiff;
 
-# $Id: ColorDiff.pm 3677 2008-04-29 17:17:58Z david $
+# $Id: ColorDiff.pm 3865 2008-05-09 19:25:53Z david $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify::HTML ();
 
-$SVN::Notify::HTML::ColorDiff::VERSION = '2.73';
+$SVN::Notify::HTML::ColorDiff::VERSION = '2.74';
 @SVN::Notify::HTML::ColorDiff::ISA = qw(SVN::Notify::HTML);
 
 =head1 Name
@@ -258,14 +258,14 @@ __END__
 
 =item *
 
-Add inline bolding just on the text that changed between two lines, like this:
-L<http://www.badgers-in-foil.co.uk/projects/cvsspam/example.html>.
+Add inline emphasis just on the text that changed between two lines, like
+this: L<http://www.badgers-in-foil.co.uk/projects/cvsspam/example.html>.
 
 =item *
 
-Add links to ToDo stuff to the top of the email, as pulled in from the
-diff. This might be tricky, since the diff is currently output I<after> the
-message body. Maybe use absolute positioning CSS?
+Add links to To Do stuff to the top of the email, as pulled in from the diff.
+This might be tricky, since the diff is currently output I<after> the message
+body. Maybe use absolute positioning CSS?
 
 =back
 
@@ -277,7 +277,7 @@ David E. Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2008 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2004-2008 Kineticode, Inc. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.

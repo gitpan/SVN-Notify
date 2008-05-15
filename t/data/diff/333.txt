@@ -6,8 +6,8 @@ Modified: trunk/activitymail/bin/activitymail
  eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
      if 0; # not running under some shell
  
--# $Id: 333.txt 743 2004-10-15 06:19:27Z david $
-+# $Id: 333.txt 743 2004-10-15 06:19:27Z david $
+-# $Id: 333.txt 3824 2008-05-05 20:07:25Z david $
++# $Id: 333.txt 3824 2008-05-05 20:07:25Z david $
  
  use strict;
  use Getopt::Std;
@@ -15,8 +15,8 @@ Modified: trunk/activitymail/bin/activitymail
  
  =head1 COPYRIGHT AND LICENSE
  
--Copyright (c) 2002-2003, David Wheeler. All Rights Reserved.
-+Copyright (c) 2002-2004, David Wheeler. All Rights Reserved.
+-Copyright (c) 2002-2003, David Wheeler. Some Rights Reserved.
++Copyright (c) 2002-2004, David Wheeler. Some Rights Reserved.
  
  This program is free software; you can redistribute it and/or modify it under
  the same terms as Perl.

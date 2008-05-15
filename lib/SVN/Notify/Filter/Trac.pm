@@ -1,12 +1,12 @@
 package SVN::Notify::Filter::Trac;
 
-# $Id: Trac.pm 3677 2008-04-29 17:17:58Z david $
+# $Id: Trac.pm 3807 2008-05-05 19:22:31Z david $
 
 use strict;
 use Text::Trac;
 use SVN::Notify;
 
-$SVN::Notify::Filter::Trac::VERSION = '2.73';
+$SVN::Notify::Filter::Trac::VERSION = '2.74';
 
 =begin comment
 
@@ -106,7 +106,7 @@ David E. Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2008 Kineticode, Inc. All Rights Reserved.
+Copyright (c) 2008 Kineticode, Inc. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.
