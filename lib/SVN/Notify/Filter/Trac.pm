@@ -1,12 +1,12 @@
 package SVN::Notify::Filter::Trac;
 
-# $Id: Trac.pm 3807 2008-05-05 19:22:31Z david $
+# $Id: Trac.pm 3903 2008-05-15 03:25:53Z david $
 
 use strict;
 use Text::Trac;
 use SVN::Notify;
 
-$SVN::Notify::Filter::Trac::VERSION = '2.74';
+$SVN::Notify::Filter::Trac::VERSION = '2.75';
 
 =begin comment
 
