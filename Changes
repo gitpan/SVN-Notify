@@ -1,5 +1,22 @@
 Revision history for Perl extension SVN::Notify
 
+2.76  2008-07-17T19:55:09
+      - svnnotify will now throw an exception for any invalid options
+        passed to it. Suggested by Ben Tilly.
+      - SVN::Notify->get_options() is now aware of SVN::Notify::Alternative,
+        and when it is used, will load the alternatives so that they can
+        properly register their command-line options and have them processed.
+        Reported by Ben Tilly.
+      - The error thrown when there is no 'to', to_regex_map', or
+        'to_email_app' attributes now waits until after the "pre_prepare"
+        filter has been run, so that filters have a chance to set one or more
+        of those values. Reported by Jeffrey Borlik.
+      - Removed redundant option validation from `svnnotify`. Reported by
+        Jeffrey Borlik.
+      - Fixed the output triggered by the '--help' and '--man' options.
+      - Adjusted missing parameter exceptions to call Pod::Usage::pod2usage()
+        when things are run by svnnotify.
+
 2.75  2008-05-18T03:38:11
       - Removed the spelling test from the distribution, since it can
         fail on systems without a spell program or using a different locale.

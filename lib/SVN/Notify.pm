@@ -1,13 +1,13 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 3919 2008-05-18 03:31:40Z david $
+# $Id: Notify.pm 4129 2008-07-17 19:42:58Z david $
 
 use strict;
 require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.75';
+$SVN::Notify::VERSION = '2.76';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -715,13 +715,10 @@ sub new {
     # Check for required parameters.
     $class->_dbpnt( "Checking required parameters to new()")
       if $params{verbose};
-    die qq{Missing required "repos_path" parameter}
+    _usage( qq{Missing required "repos_path" parameter} )
       unless $params{repos_path};
-    die qq{Missing required "revision" parameter}
+    _usage( qq{Missing required "revision" parameter} )
       unless $params{revision};
-    die qq{Missing required "to", "to_regex_map", or "to_email_map" parameter}
-        unless @{ $params{to} } || $params{to_regex_map}
-        || $params{to_email_map};
 
     # Set up default values.
     $params{svnlook}        ||= $ENV{SVNLOOK}  || $class->find_exe('svnlook');
@@ -734,7 +731,7 @@ sub new {
     $params{sendmail}       ||= $ENV{SENDMAIL} || $class->find_exe('sendmail')
         unless $params{smtp};
 
-    die qq{Cannot find sendmail and no "smtp" parameter specified}
+    _usage( qq{Cannot find sendmail and no "smtp" parameter specified} )
         unless $params{sendmail} || $params{smtp};
 
     # Set up the environment locale.
@@ -911,8 +908,17 @@ sub get_options {
     ) or return;
 
     # Load a subclass if one has been specified.
-    if ($opts->{handler}) {
-        eval "require " . __PACKAGE__ . "::$opts->{handler}" or die $@;
+    if (my $hand = $opts->{handler}) {
+        eval "require " . __PACKAGE__ . "::$hand" or die $@;
+        if ($hand eq 'Alternative') {
+            # Load the alternative subclasses.
+            Getopt::Long::GetOptions(
+                map { delete $OPTS{$_} => \$opts->{$_} } keys %OPTS
+            );
+            for my $alt (@{ $opts->{alternatives} || ['HTML']}) {
+                eval "require " . __PACKAGE__ . "::$alt" or die $@;
+            }
+        }
     }
 
     # Load any filters.
@@ -923,6 +929,8 @@ sub get_options {
         }
     }
 
+    # Disallow pass-through so that any invalid options will now fail.
+    Getopt::Long::Configure (qw(no_pass_through));
     my @to_decode;
     if (%OPTS) {
         # Get a list of string options we'll need to decode.
@@ -933,6 +941,10 @@ sub get_options {
         Getopt::Long::GetOptions(
             map { delete $OPTS{$_} => \$opts->{$_} } keys %OPTS
         );
+    } else {
+        # Call GetOptions() again so that invalid options will be properly
+        # caught.
+        Getopt::Long::GetOptions();
     }
 
     if (PERL58) {
@@ -1049,6 +1061,9 @@ expressions match any of the affected directories).
 sub prepare {
     my $self = shift;
     $self->run_filters('pre_prepare');
+    _usage(
+        qq{Missing required "to", "to_regex_map", or "to_email_map" parameter}
+    ) unless @{$self->{to}} || $self->{to_regex_map} || $self->{to_email_map};
     $self->prepare_recipients;
     return $self unless @{ $self->{to} };
     $self->prepare_contents;
@@ -2316,6 +2331,30 @@ sub _read_pipe {
 ##############################################################################
 
 sub _dbpnt { print ref(shift), ': ', join ' ', @_; }
+
+##############################################################################
+# This function is used to exit the program with an error if a parameter is
+# missing.
+##############################################################################
+
+sub _usage {
+    my ($msg) = @_;
+
+    # Just die if the API is used.
+    die $msg if $0 !~ /\bsvnnotify(?:[.]bat)?$/;
+
+    # Otherwise, tell 'em how to use it.
+    $msg =~ s/_/-/g;
+    $msg =~ s/(\s+")/$1--/g;
+    $msg =~ s/\bparameter\b/option/g;
+    require Pod::Usage;
+    Pod::Usage::pod2usage(
+        '-message'  => $msg,
+        '-verbose'  => 99,
+        '-sections' => '(?i:(Usage|Options))',
+        '-exitval'  => 1,
+    );
+}
 
 package SVN::Notify::SMTP;
 
