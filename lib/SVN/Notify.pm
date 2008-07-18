@@ -1,13 +1,13 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 4129 2008-07-17 19:42:58Z david $
+# $Id: Notify.pm 4140 2008-07-18 21:20:02Z david $
 
 use strict;
 require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.76';
+$SVN::Notify::VERSION = '2.77';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -903,7 +903,7 @@ sub get_options {
             shift; push @{ $opts->{add_headers}{+shift} }, shift
         },
         'revision-url|U|svnweb-url|S|viewcvs-url=s' => \$opts->{revision_url},
-        'rt-url|T|bugzilla-url|B|jira-url|J|gnats-url|G||ticket-url=s'
+        'rt-url|T|bugzilla-url|B|jira-url|J|gnats-url|G|ticket-url=s'
             => \$opts->{ticket_url},
     ) or return;
 

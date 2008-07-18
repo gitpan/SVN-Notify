@@ -1,5 +1,10 @@
 Revision history for Perl extension SVN::Notify
 
+2.77  2008-07-18T21:24:44
+      - Fixed a typo in a Getopt::Long specification string that reveals
+        itself only with Getopt::Long 2.3702 (which is a development release).
+        Reported by Andreas Koenig via cpan-testers.
+
 2.76  2008-07-17T19:55:09
       - svnnotify will now throw an exception for any invalid options
         passed to it. Suggested by Ben Tilly.
@@ -63,7 +68,7 @@ Revision history for Perl extension SVN::Notify
       - Bumped version number for recommended module Text::Trac up to 0.10,
         since that version fixes the last of the bugs I found with its HTML
         output.
-      - Adjusted the runnign of filters against log messages in
+      - Adjusted the running of filters against log messages in
         SVN::Notify::HTML so that any linkizing (--linkize), revision URL
         parsing (--revision-url), and ticket reference parsing (--ticket-map)
         is run after the content has been filtered. In 2.70, none of those
