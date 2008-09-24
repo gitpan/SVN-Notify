@@ -1,13 +1,13 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 4140 2008-07-18 21:20:02Z david $
+# $Id: Notify.pm 4155 2008-07-31 03:32:55Z david $
 
 use strict;
 require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.77';
+$SVN::Notify::VERSION = '2.78';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -1022,9 +1022,13 @@ sub find_exe {
     my ($class, $exe) = @_;
     $exe .= '.exe' if WIN32;
     require File::Spec;
+    require Config;
     for my $path (
-        File::Spec->path, qw(/usr/local/bin /usr/bin /usr/sbin),
-        'C:\\program files\\subversion\\bin'
+        File::Spec->path,
+        qw(/usr/local/bin /usr/bin /usr/sbin),
+        'C:\\program files\\subversion\\bin',
+        $Config::Config{installbin},
+        $Config::Config{installscript},
     ) {
         my $file = File::Spec->catfile($path, $exe);
         return $file if -f $file && -x _;

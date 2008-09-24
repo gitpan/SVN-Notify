@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-# $Id: svnnotify 4128 2008-07-17 17:59:24Z david $
+# $Id: svnnotify 4243 2008-09-04 20:36:44Z david $
 
 use strict;
 use SVN::Notify;
@@ -56,7 +56,10 @@ svnnotify - Subversion activity notification
   -x --to-regex-map TO=REGEX   A mapping between a destination email address
                                and a regular expression to match against the
                                directories affected by the commit. Required
-                               unless --to.
+                               unless --to or --to-email-map.
+     --to-email-map REGEX=TO   The inverse of --to-regex-map: Map a regular
+                               expresion to an email address. Required unless
+                               --to or --to-regex-map.
   -f --from ADDRESS            Email address to use in the From header.
   -D --user-domain DOMAIN      Domain name to append to the username to
                                complete the email address in the From header.
