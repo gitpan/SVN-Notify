@@ -1,13 +1,13 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 4155 2008-07-31 03:32:55Z david $
+# $Id: Notify.pm 4616 2009-03-19 16:56:09Z david $
 
 use strict;
 require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.78';
+$SVN::Notify::VERSION = '2.79';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -1310,9 +1310,9 @@ sub prepare_subject {
     # Add the first sentence/line from the log message.
     unless ($self->{no_first_line}) {
         # Truncate to first period after a minimum of 10 characters.
-        my $i = index $self->{message}[0], '. ';
+        my $i = index substr($self->{message}[0], 10), '. ';
         $self->{subject} .= $i > 0
-            ? substr($self->{message}[0], 0, $i + 1)
+            ? substr($self->{message}[0], 0, $i + 11)
             : $self->{message}[0];
     }
 
@@ -1582,7 +1582,7 @@ sub output_log_message {
 
     # Make Revision links.
     if (my $url = $self->{revision_url}) {
-        if (my @matches = $msg =~ /\b(?:rev(?:ision)?\s*#?\s*(\d+))\b/ig) {
+        if (my @matches = $msg =~ /\b(?:(?:rev(?:ision)?\s*#?\s*|r)(\d+))\b/ig) {
             print $out "\nRevision Links:\n--------------\n";
             printf $out "    $url\n", $_ for @matches;
         }
@@ -1595,7 +1595,7 @@ sub output_log_message {
             my ($regex, $url) = @_;
             while ($msg =~ /$regex/ig) {
                 unless ($has_header) {
-                    print $out "\nTicket Links:\n:-----------\n";
+                    print $out "\nTicket Links:\n------------\n";
                     $has_header = 1;
                 }
                 printf $out "    $url\n",  $2 || $1;
@@ -2408,7 +2408,11 @@ sub PRINT {
     return $self->{smtp}->datasend(@_);
 }
 
-sub PRINTF { shift->PRINT( sprintf @_ ) }
+sub PRINTF {
+    my $self = shift;
+    $self->PRINT( sprintf(shift, @_) );
+}
+
 sub CLOSE  {
     my $self = shift;
     $self->{smtp}->dataend;

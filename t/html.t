@@ -1,13 +1,13 @@
 #!perl -w
 
-# $Id: html.t 3476 2008-02-26 06:03:20Z david $
+# $Id: html.t 4617 2009-03-19 17:04:53Z david $
 
 use strict;
 use Test::More;
 use File::Spec::Functions;
 
 if (eval { require HTML::Entities }) {
-    plan tests => 220;
+    plan tests => 221;
 } else {
     plan skip_all => "SVN::Notify::HTML requires HTML::Entities";
 }
@@ -20,12 +20,12 @@ my $dir = catdir curdir, 't', 'scripts';
 $dir = catdir curdir, 't', 'bin' unless -d $dir;
 
 my %args = (
-    svnlook    => catfile($dir, "testsvnlook$ext"),
-    sendmail   => catfile($dir, "testsendmail$ext"),
-    repos_path => 'tmp',
-    revision   => '111',
-    to         => 'test@example.com',
-    linkize    => 1,
+    svnlook      => catfile($dir, "testsvnlook$ext"),
+    sendmail     => catfile($dir, "testsendmail$ext"),
+    repos_path   => 'tmp',
+    revision     => '111',
+    to           => 'test@example.com',
+    linkize      => 1,
 );
 
 my $subj = "Did this, that, and the «other».";
@@ -40,8 +40,10 @@ if (SVN::Notify::PERL58()) {
 ##############################################################################
 # Basic Functionality.
 ##############################################################################
-ok( my $notifier = SVN::Notify::HTML->new(%args),
-    "Construct new HTML notifier" );
+ok( my $notifier = SVN::Notify::HTML->new(
+    %args,
+    revision_url => 'http://foo.com/%s'
+), 'Construct new HTML notifier' );
 isa_ok($notifier, 'SVN::Notify::HTML');
 isa_ok($notifier, 'SVN::Notify');
 ok( $notifier->prepare, "Single method call prepare" );
@@ -52,6 +54,7 @@ is ($notifier->bugzilla_url, undef, "Check bugzilla_url" );
 is ($notifier->jira_url, undef, "Check jira_url" );
 is ($notifier->rt_url, undef, "Check rt_url" );
 ok !$notifier->wrap_log, 'wrap_log should be false';
+is $notifier->revision_url, 'http://foo.com/%s', 'Should have a revision URL';
 
 # Send the mesasge and get the output.
 ok( $notifier->execute, "HTML notify" );
@@ -92,7 +95,7 @@ for my $header ('Log Message', 'Modified Paths', 'Added Paths',
 }
 
 # Check that we have the commit metatdata.
-like( $email, qr|<dt>Revision</dt> <dd>111</dd>\n|, 'Check Revision');
+like( $email, qr|<dt>Revision</dt> <dd><a href="http://foo[.]com/111">111</a></dd>\n|, 'Check Revision');
 like( $email, qr|<dt>Author</dt> <dd>theory</dd>\n|, 'Check Author');
 like( $email,
       qr|<dt>Date</dt> <dd>2004-04-20 01:33:35 -0700 \(Tue, 20 Apr 2004\)</dd>\n|,
@@ -101,7 +104,7 @@ like( $email,
 # Check that the log message is there.
 UTF8: {
     use utf8;
-    like( $email, qr{<pre>Did this, that, and the «other»\. And then I did some more\. Some\nit was done on a second line\. “Go figure”\. r1234</pre>}, 'Check for HTML log message' );
+    like( $email, qr{<pre>Did this, that, and the «other»\. And then I did some more\. Some\nit was done on a second line\. “Go figure”\. <a href="http://foo[.]com/1234">r1234</a></pre>}, 'Check for HTML log message' );
 }
 
 # Make sure that Class/Meta.pm is listed twice, once for modification and once
@@ -282,7 +285,7 @@ ok( $notifier->execute, "Notify HTML file" );
 
 # Check the output.
 $email = get_output();
-like( $email, qr{Subject: \[222\] Hrm hrm\.\n},
+like( $email, qr{Subject: \[222\] Hrm hrm\. Let's try a few links\.\n},
       "Check subject header for HTML file" );
 like( $email, qr/From: theory\n/, 'Check HTML file From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML file To');
@@ -624,7 +627,8 @@ $email = get_output();
 like( $email,
       qr{<p>Hey, we could add one for a Subversion Revision # 606, too!</p>
 
-<p>And finally, we have RT-Ticket: 123 for Jesse and RT # 445 for Ask\.</p>}
+<p>And finally, we have RT-Ticket: 123 for Jesse and RT # 445 for Ask\.
+And we even have Mantis-161: foo bar baz for Dirk Olmes\.</p>}
 );
 
 ##############################################################################

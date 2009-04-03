@@ -1,6 +1,6 @@
 #!perl -w
 
-# $Id: htmlcolordiff.t 3485 2008-02-26 19:01:08Z david $
+# $Id: htmlcolordiff.t 4608 2009-03-17 21:41:44Z david $
 
 use strict;
 use Test::More;
@@ -261,7 +261,7 @@ ok( $notifier->execute, "Notify HTML file" );
 
 # Check the output.
 $email = get_output();
-like( $email, qr{Subject: \[222\] Hrm hrm\.\n},
+like( $email, qr{Subject: \[222\] Hrm hrm\. Let's try a few links\.\n},
       "Check subject header for HTML file" );
 like( $email, qr/From: theory\n/, 'Check HTML file From');
 like( $email, qr/To: test\@example\.com\n/, 'Check HTML file To');
@@ -437,7 +437,8 @@ $email = get_output();
 like( $email,
       qr{<p>Hey, we could add one for a Subversion Revision # 606, too!</p>
 
-<p>And finally, we have RT-Ticket: 123 for Jesse and RT # 445 for Ask\.</p>},
+<p>And finally, we have RT-Ticket: 123 for Jesse and RT # 445 for Ask\.
+And we even have Mantis-161: foo bar baz for Dirk Olmes\.</p>},
       'The log message should be in paragraph tags'
 );
 

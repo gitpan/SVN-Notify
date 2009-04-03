@@ -1,9 +1,9 @@
 #!perl -w
 
-# $Id: base.t 3596 2008-04-02 05:51:07Z david $
+# $Id: base.t 4609 2009-03-17 21:52:32Z david $
 
 use strict;
-use Test::More tests => 238;
+use Test::More tests => 244;
 use File::Spec::Functions;
 
 use_ok('SVN::Notify');
@@ -318,9 +318,7 @@ ok( $notifier->execute, "Notify subject_cx" );
 
 # Check the output.
 $email = get_output();
-my $split_subj = $qsubj;
-($split_subj = $qsubj) =~ s/that\\,/that\\,\n / if SVN::Notify::PERL58();
-like( $email, qr{Subject: \[111\] trunk/Class-Meta: $split_subj\n},
+like( $email, qr{Subject: \[111\] trunk: $qsubj\n},
       "Check subject header for CX" );
 
 ##############################################################################
@@ -331,11 +329,24 @@ ok( $notifier = SVN::Notify->new(%args, revision => '222', subject_cx => 1),
 isa_ok($notifier, 'SVN::Notify');
 ok( $notifier->prepare, "Prepare subject_cx file" );
 ok( $notifier->execute, "Notify subject_cx file" );
+# Check the output.
+$email = get_output();
+like( $email, qr{Subject: \[222\] trunk/App-Info/META.yml: Hrm hrm\. Let's try a few links\.\n},
+      "Check subject header for file CX" );
+
+##############################################################################
+# Make sure sub is at least 10 chars long.
+##############################################################################
+ok( $notifier = SVN::Notify->new(%args, revision => '222'),
+    "Construct new subject length notifier" );
+isa_ok($notifier, 'SVN::Notify');
+ok( $notifier->prepare, 'Prepare subject length' );
+ok( $notifier->execute, 'Notify subject length' );
 
 # Check the output.
 $email = get_output();
-like( $email, qr{Subject: \[222\] trunk/App-Info/META.yml: Hrm hrm\.\n},
-      "Check subject header for file CX" );
+like( $email, qr{Subject: \[222\] Hrm hrm\. Let's try a few links\.\n},
+      "Check subject header for subject length" );
 
 ##############################################################################
 # Try max_sub_length.
@@ -451,6 +462,7 @@ ok( $notifier = SVN::Notify->new(
     gnats_url    => 'http://gnats.example.com/gnatsweb.pl?cmd=view&pr=%s',
     ticket_url   => 'http://ticket.example.com/id=%s',
     ticket_regex => '\[?\s*Custom\s*#\s*(\d+)\s*\]?',
+    ticket_map   => { '\b[Mm]antis-(\d+)\b' => 'http://server/mantisbt/view.php?id=%s' },
 ),
     "Construct new URL notifier" );
 isa_ok($notifier, 'SVN::Notify');
@@ -461,6 +473,7 @@ is_deeply( $notifier->ticket_map, {
     jira     => 'http://jira.atlassian.com/secure/ViewIssue.jspa?key=%s',
     gnats    => 'http://gnats.example.com/gnatsweb.pl?cmd=view&pr=%s',
     '\[?\s*Custom\s*#\s*(\d+)\s*\]?' => 'http://ticket.example.com/id=%s',
+    '\b[Mm]antis-(\d+)\b' => 'http://server/mantisbt/view.php?id=%s',
 }, 'Check ticket_map accessor' );
 
 ok( $notifier->prepare, "Prepare URL" );
@@ -497,6 +510,9 @@ like($email,
 like($email,
      qr{    http://ticket\.example\.com/id=4321\n},
      "Check for custom ticket URL");
+like($email,
+     qr{    http://server/mantisbt/view\.php\?id=161\n},
+     "Check for Mantis ticket URL");
 
 ##############################################################################
 # Try leaving out the first line from the subject and removing part of the
@@ -514,12 +530,12 @@ is_deeply( [ $notifier->strip_cx_regex ], ['^trunk/'],
            'Check the strip_cx_regex accessor' );
 ok( $notifier->prepare, "Prepare subject checking" );
 ok( $notifier->execute, "Notify subject checking" );
-is( $notifier->subject, '[111] Class-Meta',
+is( $notifier->subject, '[111] trunk',
     "Check subject for stripped cx and no log message line");
 
 # Check the output.
 $email = get_output();
-like( $email, qr{Subject: \[111\] Class-Meta\n},
+like( $email, qr{Subject: \[111\] trunk\n},
       "Check subject header for stripped cx and no log message line" );
 
 ##############################################################################
@@ -535,12 +551,12 @@ ok( $notifier = SVN::Notify->new(
 isa_ok($notifier, 'SVN::Notify');
 ok( $notifier->prepare, "Prepare subject checking" );
 ok( $notifier->execute, "Notify subject checking" );
-is( $notifier->subject, '[111] Class',
+is( $notifier->subject, '[111] trunk',
     "Check subject for stripped cx and no log message line");
 
 # Check the output.
 $email = get_output();
-like( $email, qr{Subject: \[111\] Class\n},
+like( $email, qr{Subject: \[111\] trunk\n},
       "Check subject header for stripped cx and no log message line" );
 
 ##############################################################################
