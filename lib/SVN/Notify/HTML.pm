@@ -1,12 +1,12 @@
 package SVN::Notify::HTML;
 
-# $Id: HTML.pm 4617 2009-03-19 17:04:53Z david $
+# $Id: HTML.pm 4638 2009-04-03 00:42:40Z david $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify ();
 
-$SVN::Notify::HTML::VERSION = '2.79';
+$SVN::Notify::HTML::VERSION = '2.80';
 @SVN::Notify::HTML::ISA = qw(SVN::Notify);
 
 __PACKAGE__->register_attributes(
@@ -644,7 +644,7 @@ David E. Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2008 Kineticode, Inc. Some Rights Reserved.
+Copyright (c) 2004-2009 Kineticode, Inc. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.

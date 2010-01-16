@@ -1,12 +1,12 @@
 package SVN::Notify::HTML::ColorDiff;
 
-# $Id: ColorDiff.pm 4332 2008-09-24 04:33:22Z david $
+# $Id: ColorDiff.pm 4750 2010-01-16 04:32:23Z david $
 
 use strict;
 use HTML::Entities;
 use SVN::Notify::HTML ();
 
-$SVN::Notify::HTML::ColorDiff::VERSION = '2.79';
+$SVN::Notify::HTML::ColorDiff::VERSION = '2.80';
 @SVN::Notify::HTML::ColorDiff::ISA = qw(SVN::Notify::HTML);
 
 =head1 Name
@@ -248,7 +248,7 @@ __END__
 
 =item L<SVN::Notify::HTML|SVN::Notify::HTML>
 
-=item CVSspam: L<http://www.badgers-in-foil.co.uk/projects/cvsspam/>
+=item L<CVSspam|http://www.badgers-in-foil.co.uk/projects/cvsspam/>
 
 =back
 
@@ -277,7 +277,7 @@ David E. Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2008 Kineticode, Inc. Some Rights Reserved.
+Copyright (c) 2004-2009 Kineticode, Inc. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.

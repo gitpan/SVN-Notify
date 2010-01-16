@@ -1,13 +1,13 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 4616 2009-03-19 16:56:09Z david $
+# $Id: Notify.pm 4750 2010-01-16 04:32:23Z david $
 
 use strict;
 require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.79';
+$SVN::Notify::VERSION = '2.80';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -15,17 +15,6 @@ if (PERL58) {
     binmode STDOUT, ':utf8';
     binmode STDERR, ':utf8';
 }
-
-=begin comment
-
-Fake-out Module::Build. Delete if it ever changes to support =head1 headers
-other than all uppercase.
-
-=head1 NAME
-
-SVN::Notify - Subversion activity notification
-
-=end comment
 
 =head1 Name
 
@@ -87,10 +76,11 @@ Apache:
 
 =back
 
-See L<http://svn.haxx.se/users/archive-2006-05/0593.shtml> for more detailed
+See L<Windows Subversion + Apache + TortoiseSVN + SVN::Notify
+HOWTO|http://svn.haxx.se/users/archive-2006-05/0593.shtml> for more detailed
 information on getting SVN::Notify running on Windows. If you have issues with
-asynchronous execution, try using F<HookStart.exe>
-(L<http://www.koders.com/csharp/fidE2724F44EF2D47F1C0FE76C538006435FA20051D.aspx>)
+asynchronous execution, try using
+L<F<HookStart.exe>|http://www.koders.com/csharp/fidE2724F44EF2D47F1C0FE76C538006435FA20051D.aspx>
 to run F<svnnotify>.
 
 =cut
@@ -555,7 +545,7 @@ Deprecated. Use C<revision_url> instead.
 
   svnnotify --ticket-map '\[?#\s*(\d+)\s*\]?=http://example.com/ticket?id=%s' \
             --ticket-map 'rt=http://rt.cpan.org/NoAuth/Bugs.html?id=%s' \
-            --ticket-map '\b([A-Z]+-\d+)\b=http://jira/browse/%s'
+            --ticket-map '\b([A-Z0-9]+-\d+)\b=http://jira/browse/%s'
 
 Specifies a mapping between a regular expression and a URL. The regular
 expression should return a single match to be interpolated into the URL, which
@@ -667,7 +657,7 @@ C<prepare_subject()>.
 our %_ticket_regexen = (
     rt       => '\b((?:rt|(?:rt-)?ticket:?)\s*#?\s*(\d+))\b',
     bugzilla => '\b(bug\s*#?\s*(\d+))\b',
-    jira     => '\b([A-Z]+-\d+)\b',
+    jira     => '\b([A-Z0-9]+-\d+)\b',
     gnats    => '\b(PR\s*(\d+))\b',
 );
 
@@ -2521,49 +2511,40 @@ your OS defaults to a UTF-8 locale, things should just work.
 
 =item L<SVN::Notify::HTML|SVN::Notify::HTML>
 
+HTML notification.
+
 =item L<SVN::Notify::HTML::ColorDiff|SVN::Notify::HTML::ColorDiff>
 
-Subclasses SVN::Notify.
+HTML notification with colorized diff.
 
 =item L<SVN::Notify::Filter|SVN::Notify::Filter>
 
 How to write output filters for SVN::Notify.
 
-=item L<https://sourceforge.net/docs/E09#svn_notify>
+=item L<SourceForge Hook Scripts|http://sourceforge.net/apps/trac/sourceforge/wiki/Subversion%20hook%20scripts>
 
 SourceForge.net support for SVN::Notify.
 
-=item L<http://svn.haxx.se/users/archive-2006-05/0593.shtml>
+=item L<Windows Subversion + Apache + TortoiseSVN + SVN::Notify HOWTO|http://svn.haxx.se/users/archive-2006-05/0593.shtml>
 
-Tutorial for installing Apache, Subversion, and SVN::Notify on Windows.
+Essential for Windows Subversion users.
 
 =back
 
 =head1 Support
 
-This module is stored in an open repository at the following address:
-
-L<https://svn.kineticode.com/SVN-Notify/trunk/>
+This module is stored in an L<open repository|https://svn.kineticode.com/SVN-Notify/trunk/>.
 
 Patches against SVN::Notify are welcome. Please send bug reports to
-<bug-svn-notify@rt.cpan.org>.
+<bug-svn-notify@rt.cpan.org|mailto:bug-svn-notify@rt.cpan.org>.
 
 =head1 Author
-
-=begin comment
-
-Fake-out Module::Build. Delete if it ever changes to support =head1 headers
-other than all uppercase.
-
-=head1 AUTHOR
-
-=end comment
 
 David E. Wheeler <david@kineticode.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2008 Kineticode, Inc. Some Rights Reserved.
+Copyright (c) 2004-2009 Kineticode, Inc. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.
