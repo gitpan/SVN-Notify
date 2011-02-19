@@ -1,13 +1,13 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 4750 2010-01-16 04:32:23Z david $
+# $Id: Notify.pm 4883 2010-12-29 03:03:16Z david $
 
 use strict;
 require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.80';
+$SVN::Notify::VERSION = '2.81';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -727,7 +727,7 @@ sub new {
     # Set up the environment locale.
     if ( $params{language} && !$ENV{LANG} ) {
         ( my $lang_country = $params{language} ) =~ s/-/_/g;
-        for my $p qw(encoding svn_encoding) {
+        for my $p (qw(encoding svn_encoding)) {
             my $encoding = $params{$p};
             $encoding =~ s/-//g if uc($encoding) ne 'UTF-8';
             (my $label = $p ) =~ s/(_?)encoding/$1/;
@@ -2295,7 +2295,7 @@ sub _pipe {
     die "Cannot fork: $!\n" unless defined $pid;
 
     if ($pid) {
-        # Parent process. Set the encoing layer and return the file handle.
+        # Parent process. Set the encoding layer and return the file handle.
         binmode PIPE, ":encoding($encode)" if PERL58 && $encode;
         return *PIPE;
     } else {
