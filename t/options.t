@@ -1,7 +1,5 @@
 #!perl -w
 
-# $Id: options.t 3919 2008-05-18 03:31:40Z david $
-
 use strict;
 use Test::More tests => 11;
 

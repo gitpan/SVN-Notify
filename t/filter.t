@@ -1,7 +1,5 @@
 #!perl -w
 
-# $Id: filter.t 3855 2008-05-08 17:08:18Z david $
-
 use strict;
 use Test::More tests => 135;
 use File::Spec::Functions;

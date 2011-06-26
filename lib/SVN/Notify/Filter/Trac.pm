@@ -1,12 +1,10 @@
 package SVN::Notify::Filter::Trac;
 
-# $Id: Trac.pm 4754 2010-01-16 04:37:22Z david $
-
 use strict;
 use Text::Trac;
 use SVN::Notify;
 
-$SVN::Notify::Filter::Trac::VERSION = '2.81';
+$SVN::Notify::Filter::Trac::VERSION = '2.82';
 
 =begin comment
 
@@ -102,11 +100,11 @@ and the like in your log messages.
 
 =head1 Author
 
-David E. Wheeler <david@kineticode.com>
+David E. Wheeler <david@justatheory.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2008 Kineticode, Inc. Some Rights Reserved.
+Copyright (c) 2008-2011 David E. Wheeler. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.

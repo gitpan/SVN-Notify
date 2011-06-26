@@ -1,10 +1,10 @@
 {
    "abstract" : "Subversion activity notification",
    "author" : [
-      "David E. Wheeler <david@kineticode.com>"
+      "David E. Wheeler <david@justatheory.com>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.3703, CPAN::Meta::Converter version 2.110440",
+   "generated_by" : "Module::Build version 0.38, CPAN::Meta::Converter version 2.110440",
    "license" : [
       "perl_5"
    ],
@@ -46,7 +46,7 @@
    "provides" : {
       "SVN::Notify" : {
          "file" : "lib/SVN/Notify.pm",
-         "version" : "2.81"
+         "version" : "2.82"
       },
       "SVN::Notify::Alternative" : {
          "file" : "lib/SVN/Notify/Alternative.pm",
@@ -54,15 +54,15 @@
       },
       "SVN::Notify::Filter::Trac" : {
          "file" : "lib/SVN/Notify/Filter/Trac.pm",
-         "version" : "2.81"
+         "version" : "2.82"
       },
       "SVN::Notify::HTML" : {
          "file" : "lib/SVN/Notify/HTML.pm",
-         "version" : "2.81"
+         "version" : "2.82"
       },
       "SVN::Notify::HTML::ColorDiff" : {
          "file" : "lib/SVN/Notify/HTML/ColorDiff.pm",
-         "version" : "2.81"
+         "version" : "2.82"
       },
       "SVN::Notify::SMTP" : {
          "file" : "lib/SVN/Notify.pm",
@@ -71,9 +71,16 @@
    },
    "release_status" : "stable",
    "resources" : {
+      "bugtracker" : {
+         "web" : "http://github.com/theory/svn-notify/issues/"
+      },
+      "homepage" : "http://search.cpan.org/dist/SVN-Notify/",
       "license" : [
          "http://dev.perl.org/licenses/"
-      ]
+      ],
+      "repository" : {
+         "url" : "http://github.com/theory/svn-notify/"
+      }
    },
-   "version" : "2.81"
+   "version" : "2.82"
 }

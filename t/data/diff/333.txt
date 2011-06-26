@@ -6,8 +6,8 @@ Modified: trunk/activitymail/bin/activitymail
  eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
      if 0; # not running under some shell
  
--# $Id: 333.txt 3824 2008-05-05 20:07:25Z david $
-+# $Id: 333.txt 3824 2008-05-05 20:07:25Z david $
+-# $Id$
++# $Id$
  
  use strict;
  use Getopt::Std;

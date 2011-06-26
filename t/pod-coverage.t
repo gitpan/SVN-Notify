@@ -1,7 +1,5 @@
 #!perl -w
 
-# $Id: pod-coverage.t 4739 2009-11-30 22:12:58Z david $
-
 use strict;
 use Test::More;
 eval "use Test::Pod::Coverage 1.06";

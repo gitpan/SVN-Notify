@@ -1,7 +1,5 @@
 #!perl -w
 
-# $Id: smtp.t 4616 2009-03-19 16:56:09Z david $
-
 use strict;
 use Test::More tests => 38;
 use File::Spec::Functions;

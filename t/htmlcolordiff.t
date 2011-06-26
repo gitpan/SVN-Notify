@@ -1,7 +1,5 @@
 #!perl -w
 
-# $Id: htmlcolordiff.t 4736 2009-11-18 07:11:27Z david $
-
 use strict;
 use Test::More;
 use File::Spec::Functions;

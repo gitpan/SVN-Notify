@@ -6,7 +6,6 @@ my $class = Module::Build->subclass(
     class => 'My::Builder',
     code => q{
              sub ACTION_code {
-                 use File::Spec::Functions;
                  my $self = shift;
                  $self->SUPER::ACTION_code(@_);
                  # Copy the test scripts and then set the shebang line and make
@@ -34,7 +33,7 @@ my $build = $class->new(
     module_name        => 'SVN::Notify',
     license            => 'perl',
     create_makefile_pl => 'passthrough',
-    add_to_cleanup     => ['t/data/output.txt'],
+    add_to_cleanup     => [qw(t/data/output.txt t/scripts)],
     script_files       => ['bin/svnnotify'],
     configure_requires => { 'Module::Build' => '0.2701' },
     requires           => {
@@ -55,6 +54,13 @@ my $build = $class->new(
         'Test::Pod::Coverage' => 1.06,
         'File::Spec'          => 0,
         'Text::Trac'          => '0.10',
+    },
+    meta_merge => {
+        resources => {
+            homepage   => 'http://search.cpan.org/dist/SVN-Notify/',
+            bugtracker => 'http://github.com/theory/svn-notify/issues/',
+            repository => 'http://github.com/theory/svn-notify/',
+        }
     },
 );
 $build->create_build_script;

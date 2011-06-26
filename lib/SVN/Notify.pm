@@ -1,13 +1,11 @@
 package SVN::Notify;
 
-# $Id: Notify.pm 4883 2010-12-29 03:03:16Z david $
-
 use strict;
 require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.81';
+$SVN::Notify::VERSION = '2.82';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -2533,18 +2531,21 @@ Essential for Windows Subversion users.
 
 =head1 Support
 
-This module is stored in an L<open repository|https://svn.kineticode.com/SVN-Notify/trunk/>.
+This module is stored in an open L<GitHub
+repository|http://github.com/theory/svn-notify/>. Yes, I'm aware of the irony.
+Nevertheless, feel free to fork and contribute!
 
-Patches against SVN::Notify are welcome. Please send bug reports to
-<bug-svn-notify@rt.cpan.org|mailto:bug-svn-notify@rt.cpan.org>.
+Please file bug reports via L<GitHub
+Issues|http://github.com/theory/svn-notify/issues/> or by sending mail to
+L<bug-SVN-Notify@rt.cpan.org|mailto:bug-SVN-Notify@rt.cpan.org>.
 
 =head1 Author
 
-David E. Wheeler <david@kineticode.com>
+David E. Wheeler <david@justatheory.com>
 
 =head1 Copyright and License
 
-Copyright (c) 2004-2009 Kineticode, Inc. Some Rights Reserved.
+Copyright (c) 2004-2011 David E. Wheeler. Some Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.

@@ -1,7 +1,5 @@
 #!perl -w
 
-# $Id: base.t 4906 2011-02-19 01:44:53Z david $
-
 use strict;
 use Test::More tests => 244;
 use File::Spec::Functions;
