@@ -5,7 +5,7 @@ require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.82';
+$SVN::Notify::VERSION = '2.83';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -265,6 +265,13 @@ If unspecified, SVN::Notify will use F<sendmail> to send the message. If
 F<sendmail> is not installed locally (such as on Windows boxes!), you I<must>
 specify an SMTP server.
 
+=item smtp_tls
+
+  svnnotify --smtp-tls
+
+Use TLS authentication and encrypted channels for connecting with the server.
+Usually, TLS servers will require user/password authentication.
+
 =item smtp_user
 
   svnnotify --smtp-user myuser
@@ -279,14 +286,20 @@ message, and will of course authenticate to the SMTP server.
 
 The password for SMTP authentication. Use in parallel with C<smtp_user>.
 
+=item smtp_port
+
+  svnnotify --smtp-port 465
+
+The port for an SMTP server through which to send the notification email. The
+default port is 25.
+
 =item smtp_authtype
 
   svnnotify --smtp-authtype authtype
 
-The authentication method to use for authenticating to the SMTP server. The
-available authentication types include "PLAIN", "NTLM", "CRAM_MD5", and
-others. Consult the L<Authen::SASL|Authen::SASL> documentation for a complete
-list. Defaults to "PLAIN".
+Deprecated in SVN::Notify 2.83, where it has become a no-op. The auth type is
+determined by the contents returned by the SMTP server's response to the
+C<EHLO> command. See L<Net::SMTP::TLS/TLS and AUTHentication> for details.
 
 =item encoding
 
@@ -715,7 +728,6 @@ sub new {
     $params{encoding}       ||= $params{charset} || 'UTF-8';
     $params{svn_encoding}   ||= $params{encoding};
     $params{diff_encoding}  ||= $params{svn_encoding};
-    $params{smtp_authtype}  ||= 'PLAIN';
     $params{sendmail}       ||= $ENV{SENDMAIL} || $class->find_exe('sendmail')
         unless $params{smtp};
 
@@ -859,6 +871,8 @@ sub get_options {
         'sendmail|s=s'        => \$opts->{sendmail},
         'set-sender|E'        => \$opts->{set_sender},
         'smtp=s'              => \$opts->{smtp},
+        'smtp-port=i'         => \$opts->{smtp_port},
+        'smtp-tls!'           => \$opts->{smtp_tls},
         'encoding|charset|c=s'=> \$opts->{encoding},
         'diff-encoding=s'     => \$opts->{diff_encoding},
         'svn-encoding=s'      => \$opts->{svn_encoding},
@@ -946,6 +960,8 @@ sub get_options {
             svnlook
             sendmail
             smtp
+            smtp_tls
+            smtp_port
             diff_switches
             reply_to
             subject_prefix
@@ -956,7 +972,6 @@ sub get_options {
             footer
             smtp_user
             smtp_pass
-            smtp_authtype
             revision_url
             ticket_url
         ), @to_decode ) {
@@ -2353,24 +2368,18 @@ package SVN::Notify::SMTP;
 sub get_handle {
     my ($class, $notifier) = @_;
 
-    # Load Net::SMTP or the appropriate subclass.
-    my $smtp_class = do {
-        if ($notifier->{smtp_user}) {
-            require Net::SMTP_auth;
-            'Net::SMTP_auth';
-        } else {
-            require Net::SMTP;
-            'Net::SMTP';
-        }
-    };
-
-    my $smtp = $smtp_class->new(
+    # Load Net::SMTP::TLS.
+    require Net::SMTP::TLS;
+    require Sys::Hostname;
+    my $smtp = Net::SMTP::TLS->new(
         $notifier->{smtp},
-        ( $notifier->{verbose} > 1 ? ( Debug => 1 ) : ())
-    ) or die "Unable to create $smtp_class object: $!";
-
-    $smtp->auth( @{ $notifier }{qw(smtp_authtype smtp_user smtp_pass)} )
-        if $notifier->{smtp_user};
+        Hello => Sys::Hostname::hostname(),
+        ( $notifier->{smtp_port} ? ( Port => $notifier->{smtp_port} ) : () ),
+        ( $notifier->{smtp_tls}  ? () : (NoTLS => 1) ),
+        ( $notifier->{smtp_user} ? ( User => $notifier->{smtp_user} ) : () ),
+        ( $notifier->{smtp_pass} ? ( Password => $notifier->{smtp_pass} ) : () ),
+        ( $notifier->{verbose}   ? ( Debug => 1 ) : () )
+    ) or die "Unable to create SMTP object: $!";
 
     $smtp->mail($notifier->{from});
     $smtp->to(map { split /\s*,\s*/ } @{ $notifier->{to} });
