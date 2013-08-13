@@ -5,7 +5,7 @@ require 5.006_000;
 use constant WIN32  => $^O eq 'MSWin32';
 use constant PERL58 => $] > 5.007_000;
 require Encode if PERL58;
-$SVN::Notify::VERSION = '2.83';
+$SVN::Notify::VERSION = '2.84';
 
 # Make sure any output (such as from _dbpnt()) triggers no Perl warnings.
 if (PERL58) {
@@ -157,11 +157,11 @@ unless either C<to_regex_map> or C<to_email_map> is specified.
 This parameter specifies a hash reference of email addresses to regular
 expression strings. SVN::Notify will compile the regular expression strings
 into regular expression objects, and then send notification messages if and
-only if the name of one or more of the directories affected by a commit
-matches the regular expression. This is a good way to have a notification
-email sent to a particular mail address (or comma-delimited list of addresses)
-only for certain parts of the subversion tree. This parameter is required
-unless C<to> or C<to_email_map> is specified.
+only if the name of one or more of the paths affected by a commit matches the
+regular expression. This is a good way to have a notification email sent to a
+particular mail address (or comma-delimited list of addresses) only for
+certain parts of the subversion tree. This parameter is required unless C<to>
+or C<to_email_map> is specified.
 
 The command-line options, C<--to-regex_map> and C<-x>, can be specified any
 number of times, once for each entry in the hash to be passed to C<new()>. The
@@ -385,6 +385,14 @@ Switches to pass to C<svnlook diff>, such as C<--no-diff-deleted> and
 C<--no-diff-added>. And who knows, maybe someday it will support the same
 options as C<svn diff>, such as C<--diff-cmd> and C<--extensions>. Only
 relevant when used with C<with_diff> or C<attach_diff>.
+
+=item diff_content_type
+
+  svnnotify --diff-content-type 'text/x-diff'
+
+Sets the Content-Type header for attached diffs.  The default, if this parameter
+is not passed, is 'text/plain'.  This parameter has no effect if '--attach-diff'
+is not specified.
 
 =item reply_to
 
@@ -722,13 +730,14 @@ sub new {
       unless $params{revision};
 
     # Set up default values.
-    $params{svnlook}        ||= $ENV{SVNLOOK}  || $class->find_exe('svnlook');
-    $params{with_diff}      ||= $params{attach_diff};
-    $params{verbose}        ||= 0;
-    $params{encoding}       ||= $params{charset} || 'UTF-8';
-    $params{svn_encoding}   ||= $params{encoding};
-    $params{diff_encoding}  ||= $params{svn_encoding};
-    $params{sendmail}       ||= $ENV{SENDMAIL} || $class->find_exe('sendmail')
+    $params{svnlook}           ||= $ENV{SVNLOOK}  || $class->find_exe('svnlook');
+    $params{with_diff}         ||= $params{attach_diff};
+    $params{verbose}           ||= 0;
+    $params{encoding}          ||= $params{charset} || 'UTF-8';
+    $params{svn_encoding}      ||= $params{encoding};
+    $params{diff_encoding}     ||= $params{svn_encoding};
+    $params{diff_content_type} ||= $params{diff_content_type} || 'text/plain';
+    $params{sendmail}          ||= $ENV{SENDMAIL} || $class->find_exe('sendmail')
         unless $params{smtp};
 
     _usage( qq{Cannot find sendmail and no "smtp" parameter specified} )
@@ -880,6 +889,7 @@ sub get_options {
         'with-diff|d'         => \$opts->{with_diff},
         'attach-diff|a'       => \$opts->{attach_diff},
         'diff-switches|w=s'   => \$opts->{diff_switches},
+        'diff-content-type=s' => \$opts->{diff_content_type},
         'reply-to|R=s'        => \$opts->{reply_to},
         'subject-prefix|P=s'  => \$opts->{subject_prefix},
         'subject-cx|C'        => \$opts->{subject_cx},
@@ -1137,18 +1147,19 @@ sub prepare_recipients {
     my $fh = $self->_pipe(
         $self->{svn_encoding},
         '-|', $self->{svnlook},
-        'dirs-changed',
+        'changed',
         $self->{repos_path},
         '-r', $self->{revision},
     );
 
-    # Read in a list of the directories changed.
+    # Read in a list of the files changed.
     my ($cx, %seen);
     while (<$fh>) {
+        s/^.\s*//;
         s/[\n\r\/\\]+$//;
         for (my $i = 0; $i < @$regexen; $i += 2) {
             my ($email, $rx) = @{$regexen}[$i, $i + 1];
-            # If the directory matches the regex, save the email.
+            # If the file matches the regex, save the email.
             if (/$rx/) {
                 $self->_dbpnt( qq{"$_" matched $rx}) if $self->{verbose} > 2;
                 push @$tos, $email unless $seen{$email}++;
@@ -1313,7 +1324,9 @@ sub prepare_subject {
     # Add the first sentence/line from the log message.
     unless ($self->{no_first_line}) {
         # Truncate to first period after a minimum of 10 characters.
-        my $i = index substr($self->{message}[0], 10), '. ';
+        my $min = length $self->{message}[0];
+        $min = 10 if $min > 10;
+        my $i = index substr($self->{message}[0], $min), '. ';
         $self->{subject} .= $i > 0
             ? substr($self->{message}[0], 0, $i + 11)
             : $self->{message}[0];
@@ -1449,16 +1462,19 @@ sub output_headers {
     $self->_dbpnt( "Outputting headers") if $self->{verbose} > 2;
 
     # Q-Encoding (RFC 2047)
-    my $subj = PERL58
-        ? Encode::encode( 'MIME-Q', $self->{subject} )
-        : $self->{subject};
+    my ($subj, $from, $to) = PERL58 ? map {
+        Encode::encode( 'MIME-Q', $_ );
+    } $self->{subject}, $self->{from}, join ', ', @{ $self->{to} } : (
+        $self->{subject}, $self->{from}, join ', ', @{ $self->{to} }
+    );
+
     my @headers = (
         "MIME-Version: 1.0\n",
         "X-Mailer: SVN::Notify " . $self->VERSION
             . ": http://search.cpan.org/dist/SVN-Notify/\n",
-        "From: $self->{from}\n",
-        "Errors-To: $self->{from}\n",
-        "To: " . join ( ', ', @{ $self->{to} } ) . "\n",
+        "From: $from\n",
+        "Errors-To: $from\n",
+        "To: $to\n",
         "Subject: $subj\n"
     );
 
@@ -1704,7 +1720,7 @@ sub output_attached_diff {
     print $out "\n--$self->{boundary}\n",
       "Content-Disposition: attachment; filename=",
       "r$self->{revision}-$self->{user}.diff\n",
-      "Content-Type: text/plain; charset=$self->{encoding}\n",
+      "Content-Type: $self->{diff_content_type}; charset=$self->{encoding}\n",
       ($self->{language} ? "Content-Language: $self->{language}\n" : ()),
       "Content-Transfer-Encoding: 8bit\n\n";
     $self->_dump_diff($out, $diff);

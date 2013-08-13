@@ -3,11 +3,13 @@ Build.PL
 Changes
 lib/SVN/Notify.pm
 lib/SVN/Notify/Alternative.pm
-lib/SVN/Notify/Filter.pm
+lib/SVN/Notify/Filter.pod
 lib/SVN/Notify/Filter/Trac.pm
 lib/SVN/Notify/HTML.pm
 lib/SVN/Notify/HTML/ColorDiff.pm
 MANIFEST			This list of files
+META.json
+META.yml
 README.md
 t/alt.t
 t/base.t
@@ -40,10 +42,7 @@ t/filter.t
 t/html.t
 t/htmlcolordiff.t
 t/options.t
-t/pod-coverage.t
-t/pod.t
 t/script.t
+t/scripts/testsendmail
+t/scripts/testsvnlook
 t/smtp.t
-Makefile.PL
-META.yml
-META.json

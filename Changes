@@ -1,5 +1,27 @@
 Revision history for Perl extension SVN::Notify
 
+2.84  2013-08-13T14:25:21Z
+      - Added `--smtp-tls` to the output of `man svnnotify`.
+      - Removed `--smtp-authtype` from the output of `man svnnotify`.
+      - Added `--diff-content-type` option. Defaults to "text/plain" for
+        backward compatibility. Patch by Daniel P. Wright.
+      - Renamed `Filter.pm` to `Filter.pod`, since it's just documentation.
+      - Removed the pod tests from the distribution.
+      - Changed the CSS for message `<pre>` blocks to use `white-space:
+        pre-line`, so that long lines will be wrapped, but newlines are still
+        respected as usual. Thanks to Dave Abrahams for the patch (and the
+        persistence).
+      - Changed C<to_regex_map> to allow it to match any path in the
+        repository, including files, rather than just directories. Patch from
+        mscherer.
+      - Fixed error when the first line of the commit message is less than 10
+        characters long (issue #2).
+      - Fixed the "From" and "To" headers so that they are properly encoded as
+        MIME headers (issue #6).
+      - Removed the Makefile.PL, which was just passing through to
+        Module::Build. That pattern is now deprecated, and Module::Build is
+        required for configuration.
+
 2.83  2011-10-29T00:19:07Z
       - Added the `smtp_port` parameter and accompanying `--smtp-port` option.
         Patch from Gustavo Leite de Mendonça Chaves.
@@ -10,7 +32,7 @@ Revision history for Perl extension SVN::Notify
       - Added `--smtp-tls` option to enable TLS. Based on patch from Marino
         Miculan.
       - Deprecated `--smtp-authtype`, which is now a no-op. Net::SMTP::TLS
-        determins the auth type to use by asking the SMTP server.
+        determines the auth type to use by asking the SMTP server.
 
 2.82  2011-06-26T05:12:04
       - Moved the repository to
